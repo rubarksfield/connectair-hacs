@@ -7,14 +7,14 @@ Control S&P NARAH ventilation through its existing Connectair Wi-Fi connection. 
 [![Add to HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=rubarksfield&repository=connectair-hacs&category=integration)
 [![Add integration](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=connectair)
 
-This is an independent community integration, unaffiliated with S&P. It uses the Connectair cloud service; an internet connection and a working S&P account are required. Local, offline control is not implemented.
+This is an independent community integration, unaffiliated with S&P. It uses the Connectair cloud service; an internet connection and a working S&P account are required. Local, offline control is not implemented. See the [LAN control investigation](docs/lan-control.md) for verified findings and the next capture step.
 
 ## Features
 
 - Automatically discovers the units linked to your Connectair account.
 - Native fan entities: Low (25%), Medium (50%), High (75%) and Extra High (100%). Setting a speed selects a supported manual mode when needed. Stop/0% is available only when the unit exposes an enabled Stop control.
 - Reported speed, operating mode, filter replacement countdown and connectivity sensors.
-- Reads every 30 seconds. Commands are serialized per unit and confirmed using reported registers before Home Assistant shows success. Cloud delivery may take several minutes; each acknowledged command has a three-minute confirmation deadline. If confirmation times out, the command may still arrive later; check the reported state before retrying.
+- Reads every 30 seconds. Commands are serialized per unit and confirmed using reported registers before Home Assistant shows success. Cloud delivery or status reporting may take several minutes; each acknowledged command has a three-minute confirmation deadline. If confirmation times out, the command may still arrive later; check the reported state before retrying.
 - Renewable sign-in, refresh-token rotation and Home Assistant reauthentication.
 - Diagnostics omit account identifiers, device identifiers, names, raw dashboards and credentials.
 
