@@ -1,0 +1,28 @@
+{
+  "title": "S&P Connectair",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connect to S&P Connectair",
+        "description": "[Sign in to Connectair]({authorization_url}) in a new tab and allow offline access. After the browser returns to www.connectairapp.com, copy the complete returned address and paste it below. Keep this address private: it contains a one-time login code. A renewable login is required.",
+        "data": {"callback_url": "Complete callback URL"}
+      },
+      "reauth_confirm": {
+        "title": "Sign in to Connectair again",
+        "description": "[Sign in]({authorization_url}) using the same Connectair account. After returning to www.connectairapp.com, paste the complete returned address below. Keep this address private.",
+        "data": {"callback_url": "Complete callback URL"}
+      }
+    },
+    "error": {
+      "invalid_auth": "The login or callback is invalid or expired. Sign in again using the link above.",
+      "missing_refresh_token": "S&P did not provide a renewable login. This integration cannot run unattended with an access token alone. Please enable offline access or contact S&P.",
+      "cannot_connect": "Cannot reach S&P Connectair. Check your internet connection and try again.",
+      "invalid_response": "S&P returned an unsupported response. Please report this issue without sharing login codes or tokens."
+    },
+    "abort": {
+      "already_configured": "This Connectair account is already configured.",
+      "unique_id_mismatch": "Sign in using the same Connectair account as before.",
+      "reauth_successful": "Connectair login was renewed."
+    }
+  }
+}

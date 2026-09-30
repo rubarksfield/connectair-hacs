@@ -1,0 +1,12 @@
+{
+  "domain": "connectair",
+  "name": "S&P Connectair",
+  "codeowners": ["@rubarksfield"],
+  "config_flow": true,
+  "documentation": "https://github.com/rubarksfield/connectair-hacs",
+  "integration_type": "hub",
+  "iot_class": "cloud_polling",
+  "issue_tracker": "https://github.com/rubarksfield/connectair-hacs/issues",
+  "requirements": [],
+  "version": "0.1.0"
+}

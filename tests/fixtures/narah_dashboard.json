@@ -1,0 +1,99 @@
+{
+  "id": "demo-unit",
+  "name": "Ventilation",
+  "dashboardSections": [
+    {
+      "name": "Dashboard",
+      "frameZoneTypes": [
+        {
+          "id": 1,
+          "dashboardName": "All view",
+          "sensorGroupContainers": [
+            {
+              "id": 1,
+              "sensorGroups": [
+                {
+                  "id": 10,
+                  "sensorGroupTypeId": 4,
+                  "sensorTypeId": 14,
+                  "orderId": 1,
+                  "selectedValue": "Manual",
+                  "isVisible": true,
+                  "sensors": [
+                    {"register": "Mode_manual", "value": "Manual", "valueRaw": null, "elementClassId": 32, "state": 1, "isVisible": true, "keyidentification": 10, "keyIdentificationChildren": 196},
+                    {"register": "ModoIAQ", "value": "Automatic", "valueRaw": null, "elementClassId": 56, "state": 0, "isVisible": true, "keyidentification": 11, "keyIdentificationChildren": 13}
+                  ]
+                },
+                {
+                  "id": 11,
+                  "sensorGroupTypeId": 4,
+                  "sensorTypeId": 14,
+                  "orderId": 2,
+                  "selectedValue": null,
+                  "isVisible": false,
+                  "sensors": [
+                    {"register": "Mode_AutoHumidity", "value": "Humidity", "valueRaw": null, "elementClassId": 28, "state": 0, "isVisible": false, "keyidentification": 13, "keyIdentificationChildren": 0}
+                  ]
+                },
+                {
+                  "id": 12,
+                  "sensorGroupTypeId": 8,
+                  "sensorTypeId": 14,
+                  "orderId": 3,
+                  "selectedValue": "Keep",
+                  "isVisible": false,
+                  "sensors": [
+                    {"register": "KeepExisting", "value": "Keep", "valueRaw": null, "elementClassId": 200, "state": 1, "isVisible": false, "keyidentification": 40, "keyIdentificationChildren": 0}
+                  ]
+                },
+                {
+                  "id": 20,
+                  "sensorGroupTypeId": 3,
+                  "sensorTypeId": 14,
+                  "orderId": 4,
+                  "selectedValue": null,
+                  "isVisible": true,
+                  "sensors": [
+                    {"register": "Parado", "value": "Stop", "valueRaw": null, "elementClassId": 47, "state": 0, "isVisible": false, "keyidentification": 19, "keyIdentificationChildren": 0},
+                    {"register": "Speed1de4", "value": "Low", "valueRaw": null, "elementClassId": 126, "state": 0, "isVisible": true, "keyidentification": 196, "keyIdentificationChildren": 0},
+                    {"register": "Speed2de4", "value": "Medium", "valueRaw": null, "elementClassId": 129, "state": 0, "isVisible": true, "keyidentification": 20, "keyIdentificationChildren": 0},
+                    {"register": "Speed3de4", "value": "High", "valueRaw": null, "elementClassId": 130, "state": 0, "isVisible": true, "keyidentification": 21, "keyIdentificationChildren": 0},
+                    {"register": "Speed4de4", "value": "Extra High", "valueRaw": null, "elementClassId": 131, "state": 0, "isVisible": true, "keyidentification": 22, "keyIdentificationChildren": 0},
+                    {"register": "HighSpeed", "value": "Boost", "valueRaw": null, "elementClassId": 9, "state": 0, "isVisible": true, "keyidentification": 23, "keyIdentificationChildren": 0}
+                  ]
+                },
+                {
+                  "id": 30,
+                  "sensorGroupTypeId": 1,
+                  "sensorTypeId": 6,
+                  "orderId": 5,
+                  "selectedValue": "4",
+                  "isVisible": false,
+                  "sensors": [{"register": "HR4", "value": "4", "valueRaw": 4, "elementClassId": 0, "state": 0, "isVisible": false}]
+                },
+                {
+                  "id": 31,
+                  "sensorGroupTypeId": 1,
+                  "sensorTypeId": 6,
+                  "orderId": 6,
+                  "selectedValue": "0",
+                  "isVisible": false,
+                  "sensors": [{"register": "HR3", "value": "0", "valueRaw": 0, "elementClassId": 0, "state": 0, "isVisible": false}]
+                },
+                {
+                  "id": 32,
+                  "sensorGroupTypeId": 1,
+                  "sensorTypeId": 6,
+                  "orderId": 7,
+                  "selectedValue": "119",
+                  "isVisible": true,
+                  "sensors": [{"register": "IR20", "value": "119", "valueRaw": 119, "elementClassId": 0, "state": 0, "isVisible": true}]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
