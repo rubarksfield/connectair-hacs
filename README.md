@@ -2,7 +2,7 @@
 
 Control S&P NARAH ventilation through its existing Connectair Wi-Fi connection. No additional Modbus adapter is required.
 
-**Development preview:** automated checks pass against Home Assistant 2026.9.2. Live renewable sign-in and unattended control are still being verified. There is no production release yet.
+**Development preview:** real PKCE sign-in through S&P's query callback and refresh-token renewal have been verified. Automated checks pass against Home Assistant 2026.9.2. Independent device control and installation on a live Home Assistant instance are still being verified. There is no production release yet.
 
 [![Add to HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=rubarksfield&repository=connectair-hacs&category=integration)
 [![Add integration](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=connectair)
@@ -27,10 +27,10 @@ Requires Home Assistant **2026.9.2 or newer** and HACS.
 1. Use **Add to HACS** above, or add `https://github.com/rubarksfield/connectair-hacs` under HACS → Custom repositories, category **Integration**.
 2. Download **S&P Connectair** and restart Home Assistant.
 3. Open Settings → Devices & services → Add integration → **S&P Connectair**.
-4. Follow the sign-in link. Sign in to your existing S&P account and allow renewable access. Paste the complete returned Connectair address into the integration form. The address contains a one-time code; keep it private. The callback relay is currently under live verification; S&P's web app may navigate away before the returned address can be copied.
+4. Follow the sign-in link in a new tab. Sign in to your existing S&P account and allow renewable access. Copy the complete returned Connectair address containing the `code=` and `state=` query parameters, and paste it into the integration form. If S&P shows an **Auth Error** page, open your browser history and copy the preceding Connectair address containing `code=` and `state=`. The error-page address will not work. Keep the callback address private: it contains a one-time login code.
 5. The integration verifies token renewal and your account before adding devices. Assign each device to its room.
 
-S&P only registers its own callback address for the existing app client. This integration uses a PKCE-protected callback relay instead of requesting your account password. If S&P does not issue renewable credentials, setup fails with an authentication error. Do not share callback addresses or tokens in issues.
+S&P only registers its own callback address for the existing app client. This integration uses a PKCE-protected query callback relay instead of requesting your account password. A real authorization-code exchange, refresh-token issuance and subsequent refresh have been verified with S&P. Fragment callbacks are rejected by the provider, so use the complete query callback address described above. If S&P does not issue renewable credentials, setup fails with an authentication error. Do not share callback addresses or tokens in issues.
 
 ## Dashboard and automations
 
@@ -49,6 +49,7 @@ Replace the example entity ID with the actual discovered entity. The integration
 ## Troubleshooting
 
 - **Login expired:** use the reauthentication prompt in Devices & services.
+- **Auth Error after signing in:** retrieve the preceding Connectair callback address from browser history, including `code=` and `state=`, and paste it into the Home Assistant form. If the code has expired, start a fresh sign-in using the form's link.
 - **Unit unavailable:** confirm it is online in Connectair and that Home Assistant can reach the internet.
 - **Command unconfirmed:** check the fan in the S&P app. An acknowledgement without updated reported registers is not treated as success; retry after reading its current state.
 - **New model:** open an issue with the model and redacted integration diagnostics. Never attach raw HAR files, login URLs or credentials.

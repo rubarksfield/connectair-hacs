@@ -20,7 +20,7 @@ async def async_get_config_entry_diagnostics(
         "devices": [
             {
                 "model": device.model,
-                "online": state is not None and state.device.online,
+                "online": state.device.online if state is not None else device.online,
                 "speed": state.speed if state is not None else None,
                 "mode": state.mode if state is not None else None,
                 "filter_days": state.filter_days if state is not None else None,

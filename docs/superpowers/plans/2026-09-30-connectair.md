@@ -56,8 +56,15 @@ Files: __init__.py, coordinator.py, fan.py, sensor.py, binary_sensor.py, button.
 ## Goal ledger
 
 G1 inspection complete: command source/normal-app physical test, HA 2026.9.2 and HACS live.
-G2 auth active: refresh grant allowed, password rejected; actual PKCE relay and refresh proof pending renewable-access confirmation.
+G2 auth verified: user explicitly authorized private renewable-token storage in HA. Real query-PKCE exchange and refresh grant succeeded; account validation and both device reads succeeded after proving the server requires the official app Origin header. Fragment authorization fails at the provider. Browser history preserves the query callback when the app routes it to Auth Error.
 G3 implementation complete: protocol/auth/HA adapter, packaging and CI implemented.
-G4 automated verification complete: 108 tests pass against genuine HA 2026.9.2; ruff checks and formatting pass; independent review fixes applied including conditional Stop capability. Live authentication remains a release gate.
-G5 publish/install/dashboard pending; personal account confirmed rubarksfield and already authenticated locally.
+G4 automated verification complete: 109 tests pass against genuine HA 2026.9.2; ruff checks and formatting pass; independent review fixes applied including conditional Stop capability and required Origin. Two additional lifecycle/diagnostic hardening tests are being added.
+G5 active: development preview published to rubarksfield/connectair-hacs at 2015284; GitHub CI success. HACS installation read back at the same commit, authorized restart completed and HA returned RUNNING. Real HA config flow reaches the callback form. Renewable authentication is proven independently; HA still needs the Origin fix, account setup, device entries and dashboard. Studio Medium POST acknowledges2000 but HR4 stays1, with RPM774 consistent with Low. GET dashboard/initialise200 empty did not resolve delivery. Exact extracted app payload method matches raw-dashboard-based builder; full app runtime selection lifecycle is under investigation. Studio app reports Low; no independently confirmed speed change is claimed. Local dashboard template remains unapplied pending exact entities.
 G6 completion review pending.
+
+### Task 5: LAN control research (after current setup is complete)
+
+- [ ] Research local control using the existing Espressif Wi-Fi boards, with no additional hardware.
+- [ ] Inspect documented local protocols, the app's network behavior, local services and supported device commands.
+- [ ] Distinguish a proven offline control path from provisioning-only endpoints and cloud traffic.
+- [ ] Report a recommended path, evidence, limitations and a reversible proof-of-concept plan. Research does not authorize firmware flashing or changing network isolation.

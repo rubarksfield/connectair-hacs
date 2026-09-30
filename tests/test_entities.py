@@ -3,6 +3,7 @@
 from unittest.mock import patch
 
 import pytest
+from homeassistant import config_entries
 from homeassistant.components.fan import FanEntityFeature
 from homeassistant.exceptions import HomeAssistantError
 from test_coordinator import PollClient, make_state
@@ -145,6 +146,43 @@ async def test_diagnostics_never_export_account_or_raw_dashboard(hass, account_e
     assert "unit-a" not in rendered
     assert "account-a" not in rendered
     assert output["devices"][0]["speed"] == 4
+
+
+async def test_diagnostics_retain_device_connectivity_when_dashboard_unavailable(
+    hass, account_entry
+):
+    client = PollClient()
+    client.failures["unit-b"] = TransportError("dashboard unavailable")
+    coordinator = ConnectairCoordinator(hass, account_entry, client)
+    await coordinator.async_refresh()
+    account_entry.runtime_data = coordinator
+    output = await async_get_config_entry_diagnostics(hass, account_entry)
+    assert output["devices"][1]["online"] is True
+    assert output["devices"][1]["speed"] is None
+
+
+@pytest.mark.parametrize(
+    "stored_data",
+    [
+        {},
+        {"tokens": None},
+        {"tokens": "malformed"},
+        {"tokens": {"access_token": "test", "expires_at": 1}},
+        {"tokens": {"access_token": "test", "refresh_token": "test", "expires_at": "invalid"}},
+    ],
+)
+async def test_malformed_stored_credentials_start_reauth_instead_of_generic_setup_failure(
+    hass, account_entry, enable_custom_integrations, stored_data
+):
+    hass.config_entries.async_update_entry(account_entry, data=stored_data)
+    assert not await hass.config_entries.async_setup(account_entry.entry_id)
+    await hass.async_block_till_done()
+    progress = hass.config_entries.flow.async_progress_by_handler("connectair")
+    assert any(
+        flow["context"]["source"] == config_entries.SOURCE_REAUTH
+        and flow["context"]["entry_id"] == account_entry.entry_id
+        for flow in progress
+    )
 
 
 async def test_setup_creates_native_entities_and_unload_marks_them_unavailable(

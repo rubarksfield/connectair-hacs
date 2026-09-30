@@ -67,7 +67,10 @@ class ConnectairClient:
                 async with self._session.request(
                     method,
                     f"{API_BASE}{path}",
-                    headers={"Authorization": f"Bearer {token}"},
+                    headers={
+                        "Authorization": f"Bearer {token}",
+                        "Origin": "https://www.connectairapp.com",
+                    },
                     json=payload,
                     params=params,
                     allow_redirects=False,

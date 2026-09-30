@@ -4,13 +4,17 @@
     "step": {
       "user": {
         "title": "Connect to S&P Connectair",
-        "description": "[Sign in to Connectair]({authorization_url}) in a new tab and allow offline access. After the browser returns to www.connectairapp.com, copy the complete returned address and paste it below. Keep this address private: it contains a one-time login code. A renewable login is required.",
-        "data": {"callback_url": "Complete callback URL"}
+        "description": "[Sign in to Connectair]({authorization_url}) in a new tab and allow offline access. Copy the complete returned Connectair address, including its code= and state= query parameters, and paste it below. If S&P shows an Auth Error page, open your browser history and copy the preceding Connectair address containing code= and state=. Keep this address private: it contains a one-time login code. A renewable login is required.",
+        "data": {
+          "callback_url": "Complete callback URL"
+        }
       },
       "reauth_confirm": {
         "title": "Sign in to Connectair again",
-        "description": "[Sign in]({authorization_url}) using the same Connectair account. After returning to www.connectairapp.com, paste the complete returned address below. Keep this address private.",
-        "data": {"callback_url": "Complete callback URL"}
+        "description": "[Sign in]({authorization_url}) using the same Connectair account. Copy the complete returned Connectair address, including its code= and state= query parameters, and paste it below. If S&P shows an Auth Error page, open your browser history and copy the preceding Connectair address containing code= and state=. Keep this address private: it contains a one-time login code.",
+        "data": {
+          "callback_url": "Complete callback URL"
+        }
       }
     },
     "error": {

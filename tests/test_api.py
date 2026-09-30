@@ -89,6 +89,17 @@ async def test_list_follows_pagination_and_normalizes_online_items(session):
     ]
 
 
+async def test_device_list_includes_the_origin_required_by_connectair_server(session):
+    def list_response(url, **kwargs):
+        assert kwargs["headers"].get("Origin") == "https://www.connectairapp.com"
+        assert kwargs["headers"]["Authorization"] == "Bearer test-access-token"
+        return CallbackResult(payload={"items": [], "total": 0})
+
+    with aioresponses() as responses:
+        responses.get(f"{BASE}/device/list?page.size=10&page.number=1", callback=list_response)
+        assert await client(session).async_list_devices() == []
+
+
 async def test_user_is_validated_at_real_endpoint(session):
     with aioresponses() as responses:
         responses.get(f"{BASE}/user/me", payload={"id": 42, "email": "owner@example.com"})
@@ -163,6 +174,7 @@ async def test_api_requests_disable_redirect_following(session):
 
 async def test_speed_command_waits_for_raw_reported_change(session):
     def command_response(url, **kwargs):
+        assert kwargs["headers"].get("Origin") == "https://www.connectairapp.com"
         assert kwargs["json"]["interaction"] == {
             "sensorGroupId": 20,
             "sensorId": "Speed1de4",
