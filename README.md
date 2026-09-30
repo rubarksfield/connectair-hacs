@@ -38,6 +38,8 @@ For advanced setup, an optional **Refresh token (advanced)** field accepts a pri
 
 ## Dashboard and automations
 
+See the [daily scheduling and sensor guide](docs/scheduling-and-sensors.md) for a maximum-speed overnight schedule, manual overrides, capability-aware Off buttons and the current limits on measured humidity.
+
 Use Home Assistant Tile cards for status, with separate speed buttons for **25%, 50%, 75% and 100%**. The native fan-speed slider includes 0%, which is unsupported on units without Stop. Set tile and icon taps to **More info** when Stop is unavailable. The native fan entities work with normal actions, for example:
 
 ```yaml

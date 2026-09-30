@@ -4,7 +4,14 @@ User-facing changes, fixes and implementation findings are recorded here. Add ch
 
 ## [Unreleased]
 
-No changes pending.
+### Documentation and findings
+
+- Added a [generic scheduling and sensor guide](docs/scheduling-and-sensors.md) for two created, validated and enabled native Home Assistant automations: 100% from 22:00 to 08:00 and 25% otherwise, manual overrides until the next boundary, startup that preserves Off, and queued execution with at most two runs. Only time/startup triggers are used, with a bounded five-minute readiness wait, no reconnect triggers or automatic retries, and no write when the requested speed is already reported. Manually invoked overnight runs completed with both units reporting on at 100% in Manual mode and neither automation still active.
+- Documented four explicit dashboard speed actions and separate checks for saved configuration, visual rendering, time-trigger execution, reported state and physical response. Capability-aware Turn off cards disable taps when Stop is unsupported or the fan is not on; 16 synthetic cases passed and the four appended control/status cards were read back without replacing existing cards. Both those cards and the ventilation view were visually verified in the native desktop Home Assistant app, including reported 100%/Manual/Connected and enabled schedules. Phone rendering was not checked. No measured-humidity value or chart was added.
+- Schedule validation covered 20 native-evaluator contexts, seven time-edge checks and genuine Home Assistant 2026.9.2 YAML schema validation. Actual 08:00/22:00 clock-trigger execution and physical fan response remain unverified.
+- Recorded the current Stop boundary: inspected units lack TURN_OFF and cloud Stop is hidden. The manufacturer documents standby allowance on SW4; no hidden controls or hardware settings were changed.
+- Distinguished the built-in humidity sensor from an exposed measurement. Five cloud dashboards and 25 historical device-detail responses supplied no validated numeric internal RH field; a fresh `/basic` payload remains an evidence gap. Motor PWM and C08/C10 sensitivity settings are not RH readings, and Modbus 30023 refers to the external AIRSENS probe.
+- These documentation changes do not change runtime version 0.1.1.
 
 ## [0.1.1] — 2026-10-01
 
