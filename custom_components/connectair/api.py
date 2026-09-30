@@ -102,10 +102,11 @@ class ConnectairClient:
                         raise ProtocolError("Connectair rejected the read request")
                     try:
                         return await response.json()
-                    except (ValueError, aiohttp.ContentTypeError) as err:
-                        raise ProtocolError("Connectair returned invalid JSON") from err
-            except (TimeoutError, aiohttp.ClientError) as err:
-                raise TransportError("Connectair cloud request failed") from err
+                    except ValueError, aiohttp.ContentTypeError:
+                        # Provider exceptions can contain device URLs and private details.
+                        raise ProtocolError("Connectair returned invalid JSON") from None
+            except TimeoutError, aiohttp.ClientError:
+                raise TransportError("Connectair cloud request failed") from None
         raise AuthenticationError("Connectair login was rejected")
 
     async def async_get_user(self) -> dict[str, Any]:

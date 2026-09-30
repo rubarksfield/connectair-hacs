@@ -6,5 +6,10 @@ __pycache__/
 .coverage
 htmlcov/
 .env
+.env.*
 *.har
+*.pcap
+*.pcapng
+*.log
+.storage/
 private/

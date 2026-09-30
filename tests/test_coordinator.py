@@ -1,10 +1,12 @@
 """Account polling must isolate failures and publish confirmed commands only."""
 
 import asyncio
+import traceback
 from types import SimpleNamespace
 
 import pytest
 from homeassistant.exceptions import ConfigEntryAuthFailed, HomeAssistantError
+from homeassistant.helpers.update_coordinator import UpdateFailed
 
 from custom_components.connectair.coordinator import ConnectairCoordinator
 from custom_components.connectair.models import AuthenticationError, CommandError, TransportError
@@ -65,6 +67,56 @@ async def test_account_auth_failure_starts_reauthentication(hass, account_entry)
     coordinator = ConnectairCoordinator(hass, account_entry, client)
     with pytest.raises(ConfigEntryAuthFailed):
         await coordinator._async_update_data()
+
+
+@pytest.mark.parametrize(
+    ("provider_error", "surface_error"),
+    [
+        (AuthenticationError, ConfigEntryAuthFailed),
+        (TransportError, UpdateFailed),
+        (CommandError, UpdateFailed),
+    ],
+)
+async def test_account_poll_tracebacks_omit_provider_details(
+    hass, account_entry, provider_error, surface_error
+):
+    private_marker = "synthetic-private-account-marker"
+    client = PollClient()
+
+    async def failed_device_list():
+        raise provider_error(private_marker)
+
+    client.async_list_devices = failed_device_list
+    coordinator = ConnectairCoordinator(hass, account_entry, client)
+    with pytest.raises(surface_error) as caught:
+        await coordinator._async_update_data()
+    assert private_marker not in "".join(traceback.format_exception(caught.value))
+
+
+async def test_device_auth_poll_traceback_omits_provider_details(hass, account_entry):
+    private_marker = "synthetic-private-account-marker"
+    client = PollClient()
+    client.failures["unit-a"] = AuthenticationError(private_marker)
+    coordinator = ConnectairCoordinator(hass, account_entry, client)
+    with pytest.raises(ConfigEntryAuthFailed) as caught:
+        await coordinator._async_update_data()
+    assert private_marker not in "".join(traceback.format_exception(caught.value))
+
+
+@pytest.mark.parametrize("provider_error", [AuthenticationError, CommandError])
+@pytest.mark.usefixtures("enable_custom_integrations")
+async def test_command_tracebacks_omit_provider_details_and_preserve_reported_state(
+    hass, account_entry, provider_error
+):
+    private_marker = "synthetic-private-command-marker"
+    client = PollClient()
+    coordinator = ConnectairCoordinator(hass, account_entry, client)
+    await coordinator.async_refresh()
+    client.command_error = provider_error(private_marker)
+    with pytest.raises(HomeAssistantError) as caught:
+        await coordinator.async_set_speed("unit-a", 1)
+    assert private_marker not in "".join(traceback.format_exception(caught.value))
+    assert coordinator.data["unit-a"].speed == 4
 
 
 async def test_command_replaces_state_only_after_api_confirmation(hass, account_entry):

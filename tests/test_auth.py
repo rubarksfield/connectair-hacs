@@ -3,11 +3,13 @@
 import asyncio
 import base64
 import hashlib
+import traceback
 from urllib.parse import parse_qs, urlencode, urlsplit
 
 import aiohttp
 import pytest
 from aioresponses import aioresponses
+from yarl import URL
 
 from custom_components.connectair.auth import (
     TOKEN_URL,
@@ -16,7 +18,7 @@ from custom_components.connectair.auth import (
     create_authorization_request,
     validate_callback,
 )
-from custom_components.connectair.models import AuthenticationError
+from custom_components.connectair.models import AuthenticationError, TransportError
 
 
 def callback(request, **overrides):
@@ -176,6 +178,72 @@ async def test_auth_failure_does_not_expose_provider_description():
             with pytest.raises(AuthenticationError) as raised:
                 await auth.async_get_access_token()
         assert "secret" not in str(raised.value)
+
+
+@pytest.mark.parametrize("failure", ["response_type", "transport"])
+async def test_token_failures_omit_sensitive_provider_data_from_tracebacks(failure):
+    sensitive = "synthetic-private-marker"
+    request = create_authorization_request()
+    async with aiohttp.ClientSession() as session:
+        with aioresponses() as http:
+            if failure == "response_type":
+                http.post(TOKEN_URL, payload={}, content_type=f"application/{sensitive}")
+                error_type = AuthenticationError
+            else:
+                request_info = aiohttp.RequestInfo(
+                    url=URL(TOKEN_URL), method="POST", headers={}, real_url=URL(TOKEN_URL)
+                )
+                http.post(
+                    TOKEN_URL,
+                    exception=aiohttp.ClientResponseError(
+                        request_info=request_info, history=(), status=401, message=sensitive
+                    ),
+                )
+                error_type = TransportError
+            with pytest.raises(error_type) as raised:
+                await async_exchange_callback(session, request, callback(request))
+    rendered = "".join(traceback.format_exception(raised.value))
+    assert "Connectair" in str(raised.value)
+    assert sensitive not in rendered
+
+
+def test_invalid_callback_omits_sensitive_url_parts_from_traceback():
+    sensitive = "synthetic-private-marker"
+    request = create_authorization_request()
+    invalid_callback = f"https://www.connectairapp.com:{sensitive}"
+    with pytest.raises(AuthenticationError, match="Invalid sign-in callback") as raised:
+        validate_callback(request, invalid_callback)
+    assert sensitive not in "".join(traceback.format_exception(raised.value))
+
+
+async def test_invalid_token_lifetime_omits_provider_value_from_traceback():
+    sensitive = "synthetic-private-marker"
+    request = create_authorization_request()
+    async with aiohttp.ClientSession() as session:
+        with aioresponses() as http:
+            http.post(
+                TOKEN_URL,
+                payload={
+                    "access_token": "test-access",
+                    "refresh_token": "test-refresh",
+                    "expires_in": sensitive,
+                },
+            )
+            with pytest.raises(AuthenticationError, match="token lifetime") as raised:
+                await async_exchange_callback(session, request, callback(request))
+    assert sensitive not in "".join(traceback.format_exception(raised.value))
+
+
+def test_invalid_stored_expiry_omits_private_value_from_traceback():
+    sensitive = "synthetic-private-marker"
+    tokens = {
+        "access_token": "test-access",
+        "refresh_token": "test-refresh",
+        "expires_at": sensitive,
+    }
+    with pytest.raises(AuthenticationError, match="token expiry") as raised:
+        Auth0Session(None, tokens)
+    assert sensitive not in "".join(traceback.format_exception(raised.value))
 
 
 @pytest.mark.parametrize("expires", [0, -1, None, "bad", float("inf"), True])

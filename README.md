@@ -2,12 +2,14 @@
 
 Control S&P NARAH ventilation through its existing Connectair Wi-Fi connection. No additional Modbus adapter is required.
 
-**Version 0.1.0:** real PKCE sign-in, refresh-token renewal, independent device control and live Home Assistant enrollment have been verified. Two NARAH 160 RT units were discovered; a Home Assistant Medium-to-Low control test completed against reported speed registers. Automated tests run against Home Assistant 2026.9.2.
+**Version 0.1.1:** real PKCE sign-in, refresh-token renewal, independent device control and live Home Assistant enrollment have been verified. Two NARAH 160 RT units were discovered; a Home Assistant Medium-to-Low control test completed against reported speed registers. This patch protects formatted error tracebacks from underlying private provider details. Automated tests run against Home Assistant 2026.9.2.
 
 [![Add to HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=rubarksfield&repository=connectair-hacs&category=integration)
 [![Add integration](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=connectair)
 
 This is an independent community integration, unaffiliated with S&P. It uses the Connectair cloud service; an internet connection and a working S&P account are required. Local, offline control is not implemented. See the [LAN control investigation](docs/lan-control.md) for verified findings and the next capture step.
+
+Changes and implementation findings are recorded in the [changelog](CHANGELOG.md).
 
 ## Features
 
@@ -68,6 +70,8 @@ uv run ruff format --check .
 ```
 
 Test fixtures contain synthetic data. A small fixture adapts aioresponses 0.7's response constructor to aiohttp 3.14; production HTTP behavior is unchanged.
+
+Before publishing changes, follow [repository maintenance and privacy rules](AGENTS.md), update the changelog, and scan both Git history and staged changes with Gitleaks 8.30.1. CI scans full fetched history with redacted output. Keep real credentials, callback URLs, pairing keys and captures out of the repository. See the [publication privacy audit](docs/privacy-audit.md) for inspected surfaces, results and limitations.
 
 Repository layout follows [HACS integration requirements](https://www.hacs.dev/docs/publish/integration/). Brand assets are bundled using [Home Assistant's custom integration support](https://developers.home-assistant.io/docs/core/integration/brand_images/).
 

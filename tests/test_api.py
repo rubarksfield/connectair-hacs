@@ -2,12 +2,15 @@
 
 import asyncio
 import copy
+import traceback
 
 import aiohttp
 import pytest
 import pytest_asyncio
 from aioresponses import CallbackResult, aioresponses
+from multidict import CIMultiDict, CIMultiDictProxy
 from test_models import dashboard_fixture, groups
+from yarl import URL
 
 from custom_components.connectair.api import ConnectairClient
 from custom_components.connectair.models import (
@@ -50,6 +53,37 @@ def queue_state(responses, speed=4, mode=0, online=True):
 
 def client(session):
     return ConnectairClient(session, token_provider, confirmation_attempts=2, poll_interval=0)
+
+
+@pytest.mark.parametrize(
+    ("failure", "error_type"),
+    [("invalid_content_type", ProtocolError), ("client_response_error", TransportError)],
+)
+async def test_http_error_tracebacks_omit_device_urls_and_provider_details(
+    session, failure, error_type
+):
+    private_device_marker = "synthetic-private-device-marker"
+    provider_marker = "synthetic-private-provider-marker"
+    request_url = f"{BASE}/device/{private_device_marker}"
+    with aioresponses() as responses:
+        if failure == "invalid_content_type":
+            # Real aiohttp JSON parsing produces a ContentTypeError with this URL.
+            responses.get(request_url, body="{}", content_type="text/html")
+        else:
+            request_info = aiohttp.RequestInfo(
+                URL(request_url), "GET", CIMultiDictProxy(CIMultiDict()), URL(request_url)
+            )
+            responses.get(
+                request_url,
+                exception=aiohttp.ClientResponseError(
+                    request_info, (), status=500, message=provider_marker
+                ),
+            )
+        with pytest.raises(error_type) as caught:
+            await client(session).async_get_state(private_device_marker)
+    formatted = "".join(traceback.format_exception(caught.value))
+    assert private_device_marker not in formatted
+    assert provider_marker not in formatted
 
 
 async def test_list_follows_pagination_and_normalizes_online_items(session):

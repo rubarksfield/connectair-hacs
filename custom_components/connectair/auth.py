@@ -68,8 +68,8 @@ def validate_callback(request: AuthorizationRequest, callback_url: str) -> str:
             and parts.password is None
             and parts.path in {"", "/"}
         )
-    except (ValueError, AttributeError) as err:
-        raise AuthenticationError("Invalid sign-in callback") from err
+    except ValueError, AttributeError:
+        raise AuthenticationError("Invalid sign-in callback") from None
     if not valid_origin or (parts.query and parts.fragment):
         raise AuthenticationError("Invalid sign-in callback")
     values = parse_qs(parts.query or parts.fragment, keep_blank_values=True)
@@ -103,10 +103,10 @@ async def _request_tokens(session: aiohttp.ClientSession, payload: dict[str, Any
                 raise TransportError("Connectair login service is temporarily unavailable")
             try:
                 result = await response.json()
-            except (ValueError, aiohttp.ContentTypeError) as err:
-                raise AuthenticationError("Invalid Connectair token response") from err
-    except (aiohttp.ClientError, TimeoutError) as err:
-        raise TransportError("Unable to reach Connectair login service") from err
+            except ValueError, aiohttp.ContentTypeError:
+                raise AuthenticationError("Invalid Connectair token response") from None
+    except aiohttp.ClientError, TimeoutError:
+        raise TransportError("Unable to reach Connectair login service") from None
     if not isinstance(result, dict):
         raise AuthenticationError("Invalid Connectair token response")
     return result
@@ -126,8 +126,8 @@ def _normalize_response(response: Mapping[str, Any], previous_refresh: str | Non
         raise AuthenticationError("Invalid Connectair token lifetime")
     try:
         lifetime = float(response["expires_in"])
-    except (KeyError, TypeError, ValueError) as err:
-        raise AuthenticationError("Invalid Connectair token lifetime") from err
+    except KeyError, TypeError, ValueError:
+        raise AuthenticationError("Invalid Connectair token lifetime") from None
     if not math.isfinite(lifetime) or lifetime <= 0:
         raise AuthenticationError("Invalid Connectair token lifetime")
     return {
@@ -177,8 +177,8 @@ class Auth0Session:
             raise AuthenticationError("Renewable Connectair login is required")
         try:
             self._tokens["expires_at"] = float(self._tokens["expires_at"])
-        except (KeyError, TypeError, ValueError) as err:
-            raise AuthenticationError("Connectair token expiry is missing or invalid") from err
+        except KeyError, TypeError, ValueError:
+            raise AuthenticationError("Connectair token expiry is missing or invalid") from None
         if not math.isfinite(self._tokens["expires_at"]):
             raise AuthenticationError("Connectair token expiry is missing or invalid")
 

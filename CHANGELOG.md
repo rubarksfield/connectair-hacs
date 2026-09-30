@@ -1,0 +1,53 @@
+# Changelog
+
+User-facing changes, fixes and implementation findings are recorded here. Add changes under **Unreleased** before publishing; move them into a versioned section when that version is released. Documentation changes do not change the installed integration version.
+
+## [Unreleased]
+
+No changes pending.
+
+## [0.1.1] — 2026-10-01
+
+### Fixed
+
+- Suppressed underlying exception chains at HTTP/authentication and Home Assistant error boundaries. Safe top-level errors previously could retain provider details or device-route identifiers in a formatted traceback. Synthetic-marker regressions cover the protected paths; errors still report the appropriate failure class and safe message.
+- Validation: 166 tests passed, including 13 new privacy regressions demonstrated failing before the fix; full Ruff lint/format, whitespace and independent review passed.
+
+### Documentation and maintenance
+
+- Published the [LAN investigation](docs/lan-control.md): the local HTTP page supplies registration keys; offline fan control remains unproven. Outbound MQTT/TLS is a hypothesis, and the next useful experiment is a private AP/gateway packet capture. No PCAP was obtained with current access.
+- Clarified that slow confirmation can reflect cloud delivery or delayed status reporting; the observed delay does not establish when the motor changed speed.
+- Recorded successful HACS installation, renewable account enrollment, both device entries, the Studio Medium-to-Low test and restart persistence. Dashboard configuration was read back exactly; visual rendering remains unverified.
+- Added repository maintenance rules requiring changelog updates and a privacy review before publication.
+- Recorded the [publication privacy audit](docs/privacy-audit.md), including historical Git content, release material, workflow logs and the existing commit-metadata boundary.
+- Expanded ignored local capture/log files and added a pinned, checksum-verified Gitleaks workflow that scans full fetched Git history on pushes and pull requests.
+- Future commits from the development checkout use the personal GitHub account's noreply identity. Existing published commit metadata is unchanged.
+
+## [0.1.0] — 2026-09-30
+
+### Added
+
+- HACS installation and Add to HACS/Add integration buttons.
+- Connectair account discovery, four native fan speeds, reported mode/speed, connectivity and filter countdown sensors for validated NARAH 160 RT/P0024_R000 units.
+- Auth0 PKCE sign-in, refresh-token rotation, private Home Assistant storage and reauthentication. An optional masked refresh-token field supports advanced enrollment.
+- Per-unit command serialization, coupled-setting preservation and reported-register confirmation. Unsupported models and unavailable controls fail explicitly.
+- Diagnostics omit credentials, account/device identifiers, names and raw cloud payloads. Tests use synthetic fixtures.
+
+### Fixed during validation
+
+- Added the official app Origin header required by the cloud API.
+- Preserved the latest rotated token in flow memory after transient account-verification failures, avoiding reuse of an already consumed login code/token. Invalid authentication or changed inputs discard that pending state.
+- Normalized exact duplicate cloud records while rejecting conflicting or ambiguous controls.
+- Extended acknowledged-command confirmation to a three-minute deadline with at most 61 reads. Temporary offline/malformed reports consume further reads; the write is never replayed. Authentication errors fail immediately, and offline units are rejected before a write.
+- Hardened private token-storage errors and device availability behavior.
+
+### Findings and limits
+
+- S&P's registered callback can land on an Auth Error page despite returning a usable query callback. The sign-in instructions explain retrieving the preceding callback from browser history. Callback URLs contain private one-time codes.
+- A native fan slider includes 0%, so units without an enabled Stop control should use explicit 25/50/75/100% dashboard buttons.
+- Boost, automatic-mode selection, unsupported models and local/offline control are not implemented.
+- Release validation: 153 tests passed against genuine Home Assistant 2026.9.2; Ruff lint/format and release CI passed. Live enrollment, Home Assistant control and restart persistence were verified separately.
+
+[Unreleased]: https://github.com/rubarksfield/connectair-hacs/compare/v0.1.1...main
+[0.1.1]: https://github.com/rubarksfield/connectair-hacs/releases/tag/v0.1.1
+[0.1.0]: https://github.com/rubarksfield/connectair-hacs/releases/tag/v0.1.0

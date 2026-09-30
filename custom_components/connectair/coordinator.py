@@ -41,12 +41,12 @@ class ConnectairCoordinator(DataUpdateCoordinator[dict[str, DeviceState | None]]
         versions = self._command_versions.copy()
         try:
             devices = await self.client.async_list_devices()
-        except AuthenticationError as err:
-            raise ConfigEntryAuthFailed("Connectair login expired") from err
-        except TransportError as err:
-            raise UpdateFailed("Cannot reach Connectair cloud") from err
-        except ConnectairError as err:
-            raise UpdateFailed("Cannot read Connectair device list") from err
+        except AuthenticationError:
+            raise ConfigEntryAuthFailed("Connectair login expired") from None
+        except TransportError:
+            raise UpdateFailed("Cannot reach Connectair cloud") from None
+        except ConnectairError:
+            raise UpdateFailed("Cannot read Connectair device list") from None
         self.devices = {device.device_id: device for device in devices}
 
         async def fetch(device: Device) -> DeviceState | None:
@@ -54,8 +54,8 @@ class ConnectairCoordinator(DataUpdateCoordinator[dict[str, DeviceState | None]]
                 return None
             try:
                 return await self.client.async_get_state(device.device_id)
-            except AuthenticationError as err:
-                raise ConfigEntryAuthFailed("Connectair login expired") from err
+            except AuthenticationError:
+                raise ConfigEntryAuthFailed("Connectair login expired") from None
             except ConnectairError:
                 return None
 
@@ -73,12 +73,12 @@ class ConnectairCoordinator(DataUpdateCoordinator[dict[str, DeviceState | None]]
     async def _async_command(self, device_id: str, command) -> None:
         try:
             state = await command
-        except AuthenticationError as err:
+        except AuthenticationError:
             self.config_entry.async_start_reauth(self.hass)
-            raise HomeAssistantError("Connectair login expired; sign in again") from err
-        except ConnectairError as err:
+            raise HomeAssistantError("Connectair login expired; sign in again") from None
+        except ConnectairError:
             # Avoid forwarding provider payloads, which can contain account details.
-            raise HomeAssistantError("Connectair command was not confirmed") from err
+            raise HomeAssistantError("Connectair command was not confirmed") from None
         self._command_versions[device_id] = self._command_versions.get(device_id, 0) + 1
         self.async_set_updated_data({**self.data, device_id: state})
 
