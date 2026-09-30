@@ -39,9 +39,9 @@ class ConnectairClient:
         session: aiohttp.ClientSession,
         token_provider: TokenProvider,
         *,
-        confirmation_attempts: int = 31,
+        confirmation_attempts: int = 61,
         poll_interval: float = 3,
-        confirmation_timeout: float = 90,
+        confirmation_timeout: float = 180,
     ) -> None:
         if (
             confirmation_attempts < 1

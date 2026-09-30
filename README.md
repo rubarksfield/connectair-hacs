@@ -2,7 +2,7 @@
 
 Control S&P NARAH ventilation through its existing Connectair Wi-Fi connection. No additional Modbus adapter is required.
 
-**Development preview:** real PKCE sign-in through S&P's query callback and refresh-token renewal have been verified. Automated checks pass against Home Assistant 2026.9.2. Independent Medium-to-Low control has been verified against reported speed registers and RPM. Live Home Assistant account setup and dashboard verification are in progress. There is no production release yet.
+**Version 0.1.0:** real PKCE sign-in, refresh-token renewal, independent device control and live Home Assistant enrollment have been verified. Two NARAH 160 RT units were discovered; a Home Assistant Medium-to-Low control test completed against reported speed registers. Automated tests run against Home Assistant 2026.9.2.
 
 [![Add to HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=rubarksfield&repository=connectair-hacs&category=integration)
 [![Add integration](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=connectair)
@@ -14,7 +14,7 @@ This is an independent community integration, unaffiliated with S&P. It uses the
 - Automatically discovers the units linked to your Connectair account.
 - Native fan entities: Low (25%), Medium (50%), High (75%) and Extra High (100%). Setting a speed selects a supported manual mode when needed. Stop/0% is available only when the unit exposes an enabled Stop control.
 - Reported speed, operating mode, filter replacement countdown and connectivity sensors.
-- Reads every 30 seconds. Commands are serialized per unit and confirmed using reported registers before Home Assistant shows success. Cloud delivery may take over a minute; each acknowledged command has a 90-second confirmation deadline.
+- Reads every 30 seconds. Commands are serialized per unit and confirmed using reported registers before Home Assistant shows success. Cloud delivery may take several minutes; each acknowledged command has a three-minute confirmation deadline. If confirmation times out, the command may still arrive later; check the reported state before retrying.
 - Renewable sign-in, refresh-token rotation and Home Assistant reauthentication.
 - Diagnostics omit account identifiers, device identifiers, names, raw dashboards and credentials.
 
@@ -36,7 +36,7 @@ For advanced setup, an optional **Refresh token (advanced)** field accepts a pri
 
 ## Dashboard and automations
 
-Add the fan entities to a Home Assistant Tile card with the **Fan speed** feature. The native fan entities work with normal actions, for example:
+Use Home Assistant Tile cards for status, with separate speed buttons for **25%, 50%, 75% and 100%**. The native fan-speed slider includes 0%, which is unsupported on units without Stop. Set tile and icon taps to **More info** when Stop is unavailable. The native fan entities work with normal actions, for example:
 
 ```yaml
 action: fan.set_percentage

@@ -330,17 +330,24 @@ async def test_default_attempt_limit_accepts_reported_change_after_eight_stale_r
         assert (await api.async_set_speed("demo-unit", 1)).speed == 1
 
 
-async def test_production_defaults_confirm_a_change_after_twenty_stale_reads(session, monkeypatch):
+@pytest.mark.parametrize("stale_reads", [20, 31])
+async def test_production_defaults_confirm_a_delayed_change(session, monkeypatch, stale_reads):
     intervals = []
+    loop = asyncio.get_running_loop()
+    virtual_time = [loop.time()]
+    real_sleep = asyncio.sleep
 
     async def poll_without_waiting(interval):
         intervals.append(interval)
+        virtual_time[0] += interval
+        await real_sleep(0)
 
+    monkeypatch.setattr(loop, "time", lambda: virtual_time[0])
     monkeypatch.setattr("custom_components.connectair.api.asyncio.sleep", poll_without_waiting)
     with aioresponses() as responses:
         queue_state(responses)
         responses.post(f"{BASE}/activator/demo-unit", payload=2000)
-        for _ in range(20):
+        for _ in range(stale_reads):
             queue_state(responses)
         queue_state(responses, speed=1)
         api = ConnectairClient(session, token_provider)
@@ -355,8 +362,8 @@ async def test_production_defaults_confirm_a_change_after_twenty_stale_reads(ses
             for (method, url), calls in responses.requests.items()
             if method == "POST" and str(url) == f"{BASE}/activator/demo-unit"
         ]
-    assert intervals == [3] * 20
-    assert [len(calls) for calls in detail_calls] == [22]
+    assert intervals == [3] * stale_reads
+    assert [len(calls) for calls in detail_calls] == [stale_reads + 2]
     assert [len(calls) for calls in command_calls] == [1]
 
 

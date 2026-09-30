@@ -28,23 +28,23 @@
 
 Files: api.py, models.py, tests/test_api.py, tests/test_models.py.
 Interfaces: Device/DeviceState and async token/provider methods from spec.
-- [ ] Write and run failing literal-fixture tests: raw registers, missing selections, snapshot preservation, unsupported data and command confirmation.
-- [ ] Implement exact current app protocol and client; distinguish errors; pass targeted tests.
-- [ ] Exercise HTTP boundary success/auth/timeout/malformed responses; run lint.
+- [x] Write and run failing literal-fixture tests: raw registers, missing selections, snapshot preservation, unsupported data and command confirmation.
+- [x] Implement exact current app protocol and client; distinguish errors; pass targeted tests.
+- [x] Exercise HTTP boundary success/auth/timeout/malformed responses; run lint.
 
 ### Task 2: Auth/config flow
 
 Files: auth.py, config_flow.py, tests/test_auth.py, tests/test_config_flow.py.
-- [ ] Pin PKCE, callback host/state validation, expiry/concurrency, rotation and safe errors in failing tests.
-- [ ] Implement authorize/exchange/refresh and account validation with reauth.
-- [ ] Verify actual code exchange, refresh and standalone control; no guessed persistent auth.
+- [x] Pin PKCE, callback host/state validation, expiry/concurrency, rotation and safe errors in failing tests.
+- [x] Implement authorize/exchange/refresh and account validation with reauth.
+- [x] Verify actual code exchange, refresh and standalone control; no guessed persistent auth.
 
 ### Task 3: HA/package
 
 Files: __init__.py, coordinator.py, fan.py, sensor.py, binary_sensor.py, button.py, const.py, manifest.json, strings.json, translations/en.json, diagnostics.py; HACS/README/license/CI.
-- [ ] Test percentages, availability, command routing, unload, duplicate account and redaction before implementation.
-- [ ] Implement current HA lifecycle/platforms; add personal-owner HACS button.
-- [ ] Run entire pytest suite, ruff, metadata validation; fresh review and targeted fixes.
+- [x] Test percentages, availability, command routing, unload, duplicate account and redaction before implementation.
+- [x] Implement current HA lifecycle/platforms; add personal-owner HACS button.
+- [x] Run entire pytest suite, ruff, metadata validation; fresh review and targeted fixes.
 
 ### Task 4: Publish/install/dashboard
 
@@ -58,8 +58,8 @@ Files: __init__.py, coordinator.py, fan.py, sensor.py, binary_sensor.py, button.
 G1 inspection complete: command source/normal-app physical test, HA 2026.9.2 and HACS live.
 G2 auth verified: user explicitly authorized private renewable-token storage in HA. Real query-PKCE exchange and refresh grant succeeded; account validation and both device reads succeeded after proving the server requires the official app Origin header. Fragment authorization fails at the provider. Browser history preserves the query callback when the app routes it to Auth Error.
 G3 implementation complete: protocol/auth/HA adapter, packaging and CI implemented.
-G4 automated verification complete: 152 tests pass against genuine HA 2026.9.2; full Ruff lint and formatting pass. Exact repeated cloud records are normalized without hiding conflicting metadata. A masked refresh-token field supports private account enrollment; transient account verification can reuse a rotated token in flow memory. Confirmation is bounded by 31 reads, 3-second intervals and a 90-second deadline, tolerating temporary offline reports only after acknowledgement. Commands are never replayed.
-G5 active: development preview published to rubarksfield/connectair-hacs, installed through HACS and restarted. Independent Origin-only Medium-to-Low control is now verified: reported speed and actual RPM agree. Delivery took over a minute and briefly reported offline, explaining the earlier unconfirmed result. Studio was restored to Low/manual; Workshop was untouched. Final runtime fixes need publishing/installing, followed by private account enrollment, both device entries, a Home Assistant control test and dashboard readback.
+G4 automated verification complete: 153 tests pass against genuine HA 2026.9.2; full Ruff lint and formatting pass. Exact repeated cloud records are normalized without hiding conflicting metadata. A masked refresh-token field supports private account enrollment; transient account verification can reuse a rotated token in flow memory. Confirmation is bounded by 61 reads, 3-second intervals and a 180-second deadline, tolerating temporary offline reports only after acknowledgement. Commands are never replayed.
+G5 live setup verified: account enrollment succeeded through the masked renewable-token field and the entry reports loaded. Both NARAH units have fan, reported-mode/speed, filter and connectivity entities and correct room assignments. Home Assistant Studio Medium-to-Low control completed without any command replay. Low reporting exceeded 90 seconds, so final confirmation now allows 180 seconds and 61 reads; virtual-clock regression covers a late response after 93 seconds. The Ventilation dashboard is saved through the native API with exact entities, and its full readback matches the intended configuration. Native screenshot beta is disabled; Brave preview navigation times out, and Codex preview reaches HA login. Visual layout verification remains unavailable. Final runtime release/install and restart durability check are next.
 G6 completion review pending.
 
 ### Task 5: LAN control research (after current setup is complete)
