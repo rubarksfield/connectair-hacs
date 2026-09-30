@@ -52,6 +52,71 @@ def test_raw_registers_win_over_null_or_stale_control_selection():
     assert state.controls.boost_available
 
 
+@pytest.mark.parametrize("duplicated_groups", [(3,), (0,), tuple(range(7))])
+def test_exact_duplicate_options_keep_reported_state_and_normal_command_snapshot(duplicated_groups):
+    dashboard = dashboard_fixture()
+    for index in duplicated_groups:
+        group = groups(dashboard)[index]
+        group["sensors"] = [copy.deepcopy(option) for option in group["sensors"] for _ in range(2)]
+    original = copy.deepcopy(dashboard)
+    state = parse_dashboard(DEVICE, dashboard)
+    assert (state.speed, state.mode, state.filter_days) == (4, 0, 119)
+    assert build_command(state, state.controls.speed_group, "Speed1de4") == {
+        "interaction": {
+            "sensorGroupId": 20,
+            "sensorId": "Speed1de4",
+            "sensorValueId": 0,
+            "sensorGroupTypeId": 3,
+            "fromSensorElementClassId": 47,
+            "toSensorElementClassId": 126,
+        },
+        "sensorGroups": [
+            {
+                "sensorGroupId": 10,
+                "sensorsGroupElementList": [
+                    {"sensorElementClassId": 32, "lastValue": 0, "selected": 1, "fromSelected": 0},
+                    {"sensorElementClassId": 56, "lastValue": 0, "selected": 0, "fromSelected": 0},
+                ],
+            },
+            {
+                "sensorGroupId": 11,
+                "sensorsGroupElementList": [
+                    {"sensorElementClassId": 28, "lastValue": 0, "selected": 0, "fromSelected": 0},
+                ],
+            },
+            {
+                "sensorGroupId": 12,
+                "sensorsGroupElementList": [
+                    {"sensorElementClassId": 200, "lastValue": 0, "selected": 1, "fromSelected": 0},
+                ],
+            },
+        ],
+    }
+    assert dashboard == original
+
+
+@pytest.mark.parametrize(
+    "field, changed_value",
+    [("elementClassId", 999), ("state", -1), ("valueRaw", 7), ("isVisible", 1), ("info", "Other")],
+)
+def test_nonidentical_duplicate_speed_options_remain_ambiguous(field, changed_value):
+    dashboard = dashboard_fixture()
+    duplicate = copy.deepcopy(groups(dashboard)[3]["sensors"][1])
+    duplicate[field] = changed_value
+    groups(dashboard)[3]["sensors"].append(duplicate)
+    with pytest.raises(UnsupportedDeviceError):
+        parse_dashboard(DEVICE, dashboard)
+
+
+def test_nonidentical_duplicate_manual_option_remains_ambiguous():
+    dashboard = dashboard_fixture()
+    duplicate = copy.deepcopy(groups(dashboard)[0]["sensors"][0])
+    duplicate["keyIdentificationChildren"] = 999
+    groups(dashboard)[0]["sensors"].append(duplicate)
+    with pytest.raises(UnsupportedDeviceError):
+        parse_dashboard(DEVICE, dashboard)
+
+
 def test_hidden_stop_control_is_not_an_available_stop_capability():
     state = parse_dashboard(DEVICE, dashboard_fixture())
     assert state.controls.supports_stop is False

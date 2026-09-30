@@ -2,7 +2,7 @@
 
 Control S&P NARAH ventilation through its existing Connectair Wi-Fi connection. No additional Modbus adapter is required.
 
-**Development preview:** real PKCE sign-in through S&P's query callback and refresh-token renewal have been verified. Automated checks pass against Home Assistant 2026.9.2. Independent device control and installation on a live Home Assistant instance are still being verified. There is no production release yet.
+**Development preview:** real PKCE sign-in through S&P's query callback and refresh-token renewal have been verified. Automated checks pass against Home Assistant 2026.9.2. Independent Medium-to-Low control has been verified against reported speed registers and RPM. Live Home Assistant account setup and dashboard verification are in progress. There is no production release yet.
 
 [![Add to HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=rubarksfield&repository=connectair-hacs&category=integration)
 [![Add integration](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=connectair)
@@ -14,7 +14,7 @@ This is an independent community integration, unaffiliated with S&P. It uses the
 - Automatically discovers the units linked to your Connectair account.
 - Native fan entities: Low (25%), Medium (50%), High (75%) and Extra High (100%). Setting a speed selects a supported manual mode when needed. Stop/0% is available only when the unit exposes an enabled Stop control.
 - Reported speed, operating mode, filter replacement countdown and connectivity sensors.
-- Reads every 30 seconds. Commands are serialized per unit and confirmed using reported registers before Home Assistant shows success.
+- Reads every 30 seconds. Commands are serialized per unit and confirmed using reported registers before Home Assistant shows success. Cloud delivery may take over a minute; each acknowledged command has a 90-second confirmation deadline.
 - Renewable sign-in, refresh-token rotation and Home Assistant reauthentication.
 - Diagnostics omit account identifiers, device identifiers, names, raw dashboards and credentials.
 
@@ -31,6 +31,8 @@ Requires Home Assistant **2026.9.2 or newer** and HACS.
 5. The integration verifies token renewal and your account before adding devices. Assign each device to its room.
 
 S&P only registers its own callback address for the existing app client. This integration uses a PKCE-protected query callback relay instead of requesting your account password. A real authorization-code exchange, refresh-token issuance and subsequent refresh have been verified with S&P. Fragment callbacks are rejected by the provider, so use the complete query callback address described above. If S&P does not issue renewable credentials, setup fails with an authentication error. Do not share callback addresses or tokens in issues.
+
+For advanced setup, an optional **Refresh token (advanced)** field accepts a private refresh token already issued for your Connectair account. Leave the callback address blank when using this option. The field masks the credential; the integration renews it, verifies the account and stores the returned token bundle in Home Assistant's private configuration. Leave this field blank for normal sign-in. It accepts a refresh token, not your S&P password.
 
 ## Dashboard and automations
 

@@ -194,6 +194,230 @@ async def test_speed_command_waits_for_raw_reported_change(session):
     assert state.speed == 1
 
 
+@pytest.mark.parametrize("temporary_error", ["controls", "structure", "transport"])
+async def test_acknowledged_command_survives_one_temporary_confirmation_read_error(
+    session, temporary_error
+):
+    with aioresponses() as responses:
+        queue_state(responses)
+        responses.post(f"{BASE}/activator/demo-unit", payload=2000)
+        if temporary_error == "transport":
+            responses.get(f"{BASE}/device/demo-unit", status=503)
+        else:
+            dashboard = dashboard_fixture()
+            if temporary_error == "controls":
+                groups(dashboard)[3]["sensors"][2]["elementClassId"] = None
+            else:
+                dashboard["dashboardSections"] = None
+            responses.get(f"{BASE}/device/demo-unit", payload=DEVICE)
+            responses.post(f"{BASE}/device/demo-unit/dashboard", payload=dashboard)
+        queue_state(responses, speed=1)
+        state = await client(session).async_set_speed("demo-unit", 1)
+        command_requests = [
+            calls
+            for (method, url), calls in responses.requests.items()
+            if method == "POST" and str(url) == f"{BASE}/activator/demo-unit"
+        ]
+    assert state.speed == 1
+    assert [len(calls) for calls in command_requests] == [1]
+
+
+async def test_repeated_malformed_confirmation_reads_exhaust_without_resending_command(session):
+    malformed = dashboard_fixture()
+    groups(malformed)[3]["sensors"][2]["elementClassId"] = None
+    with aioresponses() as responses:
+        queue_state(responses)
+        responses.post(f"{BASE}/activator/demo-unit", payload=2000)
+        for _ in range(2):
+            responses.get(f"{BASE}/device/demo-unit", payload=DEVICE)
+            responses.post(f"{BASE}/device/demo-unit/dashboard", payload=malformed)
+        with pytest.raises(CommandError):
+            await client(session).async_set_speed("demo-unit", 1)
+        command_requests = [
+            calls
+            for (method, url), calls in responses.requests.items()
+            if method == "POST" and str(url) == f"{BASE}/activator/demo-unit"
+        ]
+        read_requests = [
+            calls
+            for (method, url), calls in responses.requests.items()
+            if method == "GET" and str(url) == f"{BASE}/device/demo-unit"
+        ]
+    assert [len(calls) for calls in command_requests] == [1]
+    assert [len(calls) for calls in read_requests] == [3]
+
+
+async def test_unsupported_initial_controls_reject_without_any_command(session):
+    unsupported = dashboard_fixture()
+    groups(unsupported)[3]["sensors"][2]["elementClassId"] = None
+    with aioresponses() as responses:
+        responses.get(f"{BASE}/device/demo-unit", payload=DEVICE)
+        responses.post(f"{BASE}/device/demo-unit/dashboard", payload=unsupported)
+        with pytest.raises(UnsupportedDeviceError):
+            await client(session).async_set_speed("demo-unit", 1)
+        assert not any("/activator/" in str(url) for _, url in responses.requests)
+
+
+async def test_conflicting_duplicate_initial_control_rejects_without_any_command(session):
+    dashboard = dashboard_fixture()
+    duplicate = copy.deepcopy(groups(dashboard)[3]["sensors"][1])
+    duplicate["state"] = -1
+    groups(dashboard)[3]["sensors"].append(duplicate)
+    with aioresponses() as responses:
+        responses.get(f"{BASE}/device/demo-unit", payload=DEVICE)
+        responses.post(f"{BASE}/device/demo-unit/dashboard", payload=dashboard)
+        with pytest.raises(UnsupportedDeviceError):
+            await client(session).async_set_speed("demo-unit", 1)
+        assert not any("/activator/" in str(url) for _, url in responses.requests)
+
+
+async def test_confirmation_authentication_failure_is_not_a_transient_read_error(session):
+    with aioresponses() as responses:
+        queue_state(responses)
+        responses.post(f"{BASE}/activator/demo-unit", payload=2000)
+        responses.get(f"{BASE}/device/demo-unit", status=403)
+        with pytest.raises(AuthenticationError):
+            await client(session).async_set_speed("demo-unit", 1)
+
+
+async def test_temporary_cloud_offline_status_after_acknowledgement_can_recover(session):
+    # Live evidence showed an accepted command arriving after a brief offline report.
+    with aioresponses() as responses:
+        queue_state(responses)
+        responses.post(f"{BASE}/activator/demo-unit", payload=2000)
+        queue_state(responses, speed=1, online=False)
+        queue_state(responses, speed=1)
+        state = await client(session).async_set_speed("demo-unit", 1)
+        command_calls = [
+            calls
+            for (method, url), calls in responses.requests.items()
+            if method == "POST" and str(url) == f"{BASE}/activator/demo-unit"
+        ]
+    assert (state.speed, state.device.online) == (1, True)
+    assert [len(calls) for calls in command_calls] == [1]
+
+
+async def test_all_offline_confirmation_reads_exhaust_without_repeating_command(session):
+    with aioresponses() as responses:
+        queue_state(responses)
+        responses.post(f"{BASE}/activator/demo-unit", payload=2000)
+        queue_state(responses, speed=1, online=False)
+        queue_state(responses, speed=1, online=False)
+        with pytest.raises(DeviceOfflineError):
+            await client(session).async_set_speed("demo-unit", 1)
+        detail_calls = [
+            calls
+            for (method, url), calls in responses.requests.items()
+            if method == "GET" and str(url) == f"{BASE}/device/demo-unit"
+        ]
+        command_calls = [
+            calls
+            for (method, url), calls in responses.requests.items()
+            if method == "POST" and str(url) == f"{BASE}/activator/demo-unit"
+        ]
+    assert [len(calls) for calls in detail_calls] == [3]
+    assert [len(calls) for calls in command_calls] == [1]
+
+
+async def test_default_attempt_limit_accepts_reported_change_after_eight_stale_reads(session):
+    with aioresponses() as responses:
+        queue_state(responses)
+        responses.post(f"{BASE}/activator/demo-unit", payload=2000)
+        for _ in range(9):
+            queue_state(responses)
+        queue_state(responses, speed=1)
+        api = ConnectairClient(session, token_provider, poll_interval=0)
+        assert (await api.async_set_speed("demo-unit", 1)).speed == 1
+
+
+async def test_production_defaults_confirm_a_change_after_twenty_stale_reads(session, monkeypatch):
+    intervals = []
+
+    async def poll_without_waiting(interval):
+        intervals.append(interval)
+
+    monkeypatch.setattr("custom_components.connectair.api.asyncio.sleep", poll_without_waiting)
+    with aioresponses() as responses:
+        queue_state(responses)
+        responses.post(f"{BASE}/activator/demo-unit", payload=2000)
+        for _ in range(20):
+            queue_state(responses)
+        queue_state(responses, speed=1)
+        api = ConnectairClient(session, token_provider)
+        assert (await api.async_set_speed("demo-unit", 1)).speed == 1
+        detail_calls = [
+            calls
+            for (method, url), calls in responses.requests.items()
+            if method == "GET" and str(url) == f"{BASE}/device/demo-unit"
+        ]
+        command_calls = [
+            calls
+            for (method, url), calls in responses.requests.items()
+            if method == "POST" and str(url) == f"{BASE}/activator/demo-unit"
+        ]
+    assert intervals == [3] * 20
+    assert [len(calls) for calls in detail_calls] == [22]
+    assert [len(calls) for calls in command_calls] == [1]
+
+
+async def test_authentication_failure_after_temporary_offline_status_still_fails_immediately(
+    session,
+):
+    with aioresponses() as responses:
+        queue_state(responses)
+        responses.post(f"{BASE}/activator/demo-unit", payload=2000)
+        queue_state(responses, online=False)
+        responses.get(f"{BASE}/device/demo-unit", status=403)
+        with pytest.raises(AuthenticationError):
+            await client(session).async_set_speed("demo-unit", 1)
+
+
+@pytest.mark.parametrize("prior_offline", [False, True])
+async def test_confirmation_deadline_bounds_a_blocked_http_read_without_resending_command(
+    session, prior_offline
+):
+    entered = asyncio.Event()
+    blocked = asyncio.Event()
+
+    async def blocked_detail(url, **kwargs):
+        entered.set()
+        await blocked.wait()
+        return CallbackResult(payload=DEVICE)
+
+    with aioresponses() as responses:
+        queue_state(responses)
+        responses.post(f"{BASE}/activator/demo-unit", payload=2000)
+        if prior_offline:
+            queue_state(responses, speed=1, online=False)
+        responses.get(f"{BASE}/device/demo-unit", callback=blocked_detail)
+        api = ConnectairClient(
+            session,
+            token_provider,
+            confirmation_attempts=20,
+            poll_interval=0,
+            confirmation_timeout=0.02,
+        )
+        expected_error = DeviceOfflineError if prior_offline else CommandError
+        started = asyncio.get_running_loop().time()
+        with pytest.raises(expected_error):
+            await api.async_set_speed("demo-unit", 1)
+        elapsed = asyncio.get_running_loop().time() - started
+        command_calls = [
+            calls
+            for (method, url), calls in responses.requests.items()
+            if method == "POST" and str(url) == f"{BASE}/activator/demo-unit"
+        ]
+    assert entered.is_set()
+    assert elapsed < 0.5
+    assert [len(calls) for calls in command_calls] == [1]
+
+
+@pytest.mark.parametrize("deadline", [0, -1, float("inf"), float("nan")])
+def test_confirmation_deadline_must_be_finite_and_positive(deadline):
+    with pytest.raises(ValueError):
+        ConnectairClient(None, token_provider, confirmation_timeout=deadline)
+
+
 async def test_failed_acknowledgement_is_not_reported_as_success(session):
     with aioresponses() as responses:
         queue_state(responses)
@@ -244,6 +468,7 @@ async def test_offline_device_cannot_send_a_command(session):
         queue_state(responses, online=False)
         with pytest.raises(DeviceOfflineError):
             await client(session).async_set_speed("demo-unit", 1)
+        assert not any("/activator/" in str(url) for _, url in responses.requests)
 
 
 async def test_hidden_stop_is_rejected_before_changing_automatic_mode(session):

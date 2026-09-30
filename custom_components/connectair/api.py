@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import math
 from collections.abc import Awaitable, Callable
 from typing import Any
 from urllib.parse import quote
@@ -38,15 +39,22 @@ class ConnectairClient:
         session: aiohttp.ClientSession,
         token_provider: TokenProvider,
         *,
-        confirmation_attempts: int = 8,
-        poll_interval: float = 2.5,
+        confirmation_attempts: int = 31,
+        poll_interval: float = 3,
+        confirmation_timeout: float = 90,
     ) -> None:
-        if confirmation_attempts < 1 or poll_interval < 0:
+        if (
+            confirmation_attempts < 1
+            or poll_interval < 0
+            or not math.isfinite(confirmation_timeout)
+            or confirmation_timeout <= 0
+        ):
             raise ValueError("Invalid command confirmation settings")
         self._session = session
         self._token_provider = token_provider
         self._confirmation_attempts = confirmation_attempts
         self._poll_interval = poll_interval
+        self._confirmation_timeout = confirmation_timeout
         self._command_locks: dict[str, asyncio.Lock] = {}
 
     async def _request(
@@ -168,14 +176,27 @@ class ConnectairClient:
     async def _confirm(
         self, device_id: str, predicate: Callable[[DeviceState], bool]
     ) -> DeviceState:
-        for attempt in range(self._confirmation_attempts):
-            if attempt:
-                await asyncio.sleep(self._poll_interval)
-            state = await self.async_get_state(device_id)
-            if not state.device.online:
-                raise DeviceOfflineError("Device went offline during command confirmation")
-            if predicate(state):
-                return state
+        """Bound reads by attempts and elapsed time; never repeat a command."""
+        last_read_offline = False
+        try:
+            async with asyncio.timeout(self._confirmation_timeout):
+                for attempt in range(self._confirmation_attempts):
+                    if attempt:
+                        await asyncio.sleep(self._poll_interval)
+                    try:
+                        state = await self.async_get_state(device_id)
+                    except ProtocolError, UnsupportedDeviceError, TransportError:
+                        continue
+                    last_read_offline = not state.device.online
+                    # The cloud can briefly report offline while an accepted command arrives.
+                    if last_read_offline:
+                        continue
+                    if predicate(state):
+                        return state
+        except TimeoutError:
+            pass
+        if last_read_offline:
+            raise DeviceOfflineError("Device remained offline during command confirmation")
         raise CommandError("Device did not report the requested state")
 
     async def async_set_speed(self, device_id: str, speed: int) -> DeviceState:

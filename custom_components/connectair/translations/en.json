@@ -6,19 +6,27 @@
         "title": "Connect to S&P Connectair",
         "description": "[Sign in to Connectair]({authorization_url}) in a new tab and allow offline access. Copy the complete returned Connectair address, including its code= and state= query parameters, and paste it below. If S&P shows an Auth Error page, open your browser history and copy the preceding Connectair address containing code= and state=. Keep this address private: it contains a one-time login code. A renewable login is required.",
         "data": {
-          "callback_url": "Complete callback URL"
+          "callback_url": "Complete callback URL",
+          "refresh_token": "Refresh token (advanced)"
+        },
+        "data_description": {
+          "refresh_token": "Optional. Use only a private refresh token already issued for your Connectair account. Leave blank for normal sign-in."
         }
       },
       "reauth_confirm": {
         "title": "Sign in to Connectair again",
         "description": "[Sign in]({authorization_url}) using the same Connectair account. Copy the complete returned Connectair address, including its code= and state= query parameters, and paste it below. If S&P shows an Auth Error page, open your browser history and copy the preceding Connectair address containing code= and state=. Keep this address private: it contains a one-time login code.",
         "data": {
-          "callback_url": "Complete callback URL"
+          "callback_url": "Complete callback URL",
+          "refresh_token": "Refresh token (advanced)"
+        },
+        "data_description": {
+          "refresh_token": "Optional. Use only a private refresh token already issued for your Connectair account. Leave blank for normal sign-in."
         }
       }
     },
     "error": {
-      "invalid_auth": "The login or callback is invalid or expired. Sign in again using the link above.",
+      "invalid_auth": "The login, callback or advanced refresh token is invalid or expired. Sign in again using the link above.",
       "missing_refresh_token": "S&P did not provide a renewable login. This integration cannot run unattended with an access token alone. Please enable offline access or contact S&P.",
       "cannot_connect": "Cannot reach S&P Connectair. Check your internet connection and try again.",
       "invalid_response": "S&P returned an unsupported response. Please report this issue without sharing login codes or tokens."

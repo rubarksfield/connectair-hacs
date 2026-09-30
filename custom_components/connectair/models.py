@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
 from typing import Any
 
@@ -120,6 +121,7 @@ def _integer(value: Any) -> int | None:
 
 
 def _options(group: dict[str, Any]) -> list[dict[str, Any]]:
+    """Collapse exact cloud duplicates without hiding conflicting metadata."""
     options = group.get("sensors")
     if (
         not isinstance(options, list)
@@ -127,7 +129,15 @@ def _options(group: dict[str, Any]) -> list[dict[str, Any]]:
         or not all(isinstance(o, dict) for o in options)
     ):
         raise ProtocolError("Dashboard contains invalid control options")
-    return options
+    unique = []
+    seen: set[str] = set()
+    for option in options:
+        # Full JSON records preserve distinctions such as true versus 1.
+        fingerprint = json.dumps(option, sort_keys=True)
+        if fingerprint not in seen:
+            seen.add(fingerprint)
+            unique.append(option)
+    return unique
 
 
 def _flatten_dashboard(dashboard: dict[str, Any]) -> tuple[dict[str, Any], ...]:
