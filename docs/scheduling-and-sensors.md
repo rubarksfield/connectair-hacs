@@ -1,6 +1,6 @@
 # Scheduling and sensor limits
 
-Two native Home Assistant schedule automations have been created, validated and enabled. Manually invoked runs of the current overnight rule completed with **both units reporting 100% in Manual mode**. Actual future 08:00/22:00 clock-trigger execution remains unverified. The generic recipe below uses the existing Connectair cloud integration; `fan.ventilation_unit_1` and `fan.ventilation_unit_2` are placeholders. These documentation changes do not change runtime version **0.1.1**.
+Two native Home Assistant schedule automations have been created, validated and enabled. Manually invoked overnight runs completed with **both units reporting 100% in Manual mode**. The actual **08:00 Europe/Lisbon time triggers on 1 October** also completed, with both units subsequently reporting **25% in Manual mode**. The 22:00 clock trigger and physical motor response remain unverified. The generic recipe below uses the existing Connectair cloud integration; `fan.ventilation_unit_1` and `fan.ventilation_unit_2` are placeholders. These documentation changes do not change runtime version **0.1.1**.
 
 ## Daily schedule for two units
 
@@ -117,7 +117,7 @@ The inspected dashboard update adds reported fan percentage/status and a capabil
 
 Configuration readback proves that a dashboard was saved. It does not prove that a time trigger fired or that the motor responded. Schedule validation covered 20 native-evaluator contexts and seven time-edge checks; the generic YAML also passed Home Assistant 2026.9.2 automation/action schemas. Both manually invoked overnight runs finished, neither automation remained active, and both fans reported on at 100% in Manual mode. One initial manual application failed; a later explicit manual application succeeded after fresh state and no active earlier run were confirmed. This was an operator action, not an automatic retry.
 
-Actual 08:00/22:00 clock-trigger execution and physical motor response have not been observed. Validate the scheduled boundary, automation trace, reported mode/speed, startup behavior and physical response separately. Desktop visual verification does not establish phone rendering.
+At 08:00 Europe/Lisbon on 1 October, both genuine time-triggered traces selected the daytime action, issued exactly one `fan.set_percentage: 25` per unit and finished without trace errors. At 08:01:30, both units reported on at 25%, speed level 1 and Manual mode, with neither automation still running. This verifies scheduled execution and cloud-reported state, not the time or fact of physical motor actuation. The 22:00 clock trigger, startup behavior and physical response still require separate live verification. Desktop visual verification does not establish phone rendering.
 
 ## Genuine Stop is conditional
 

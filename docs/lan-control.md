@@ -33,21 +33,35 @@ Fresh read-only UniFi client information confirmed both units online with nonzer
 
 We have enough information to test listener availability, but not to issue a verified local fan command. The tested default interfaces did not expose a usable API; an undocumented port or HTTP route remains possible. No fan commands, update invitations, provisioning commands or firmware changes were sent during this experiment. Local control still needs vendor protocol documentation or traffic evidence.
 
+## Passive access-point captures
+
+On 1 October, read-only UniFi inspection confirmed that each board was associated with its existing locked access point. After the operator accepted UniFi's Debug notice, both AP shells connected and supplied `tcpdump`. No SSH credentials were retrieved and no AP, network or device configuration was changed.
+
+A nonpromiscuous, board-filtered capture on one AP's `br0` ran for three minutes and showed only three ARP announcements. A subsequent capture on `any` exposed that board's transit traffic. This comparison shows why the bridge-only result cannot establish an absence of cloud traffic. The exact kernel/driver forwarding path was not identified.
+
+Each AP's `any` capture was limited to its own board, 180 seconds and 120 packets. Both reached the packet limit and showed bidirectional TCP traffic between the board and the same internet address on remote port **8883**. The captures reported zero kernel drops, but included duplicate observations from multiple interfaces; those counts are not unique-packet rates or proof of complete visibility. These midstream exchanges do not establish which peer initiated the connection.
+
+A further passive sample on one board was limited to eight TCP PUSH packets and a 160-byte snapshot. A complete 33-byte TCP payload began with `17 03 03 00 1c`: framing consistent with a TLS-encrypted record containing 28 bytes after its five-byte header. This does not establish the negotiated TLS version, MQTT, topics, authentication or command contents. Raw captures, addresses and screenshots remain private and are excluded from Git.
+
+Separate three-minute, board-filtered windows for TCP segments beginning with TLS handshake record type 22 printed no matching packets. These short, boundary-dependent filters do not establish that negotiation never occurs; no ClientHello, ServerHello, DNS name or SNI was verified. Both bounded capture processes returned to their shell prompts, without forcing a reconnect or reset.
+
+No fan commands were sent by the investigator during these captures. The existing Home Assistant morning schedules ran independently; their traces and reported states were checked separately, without claiming that a particular captured packet carried a speed command.
+
 ## Leading hypothesis
 
-The board probably connects outward using **MQTT over TLS**. [Espressif's ESP-MQTT documentation](https://docs.espressif.com/projects/esp-idf/en/v5.5/esp32s2/api-reference/protocols/mqtt.html) identifies 8883 as its default TLS port. This is an inference from the manufacturer's port requirement and board branding. No packet capture has verified the broker, transport, device credentials, topics or payloads. Closed inbound MQTT ports do not exclude an outbound MQTT client.
+The board probably uses **MQTT over TLS**. [Espressif's ESP-MQTT documentation](https://docs.espressif.com/projects/esp-idf/en/v5.5/esp32s2/api-reference/protocols/mqtt.html) identifies 8883 as its default TLS port. This remains an inference from the manufacturer's port requirement, board branding and the captured remote-8883 traffic with TLS-compatible framing. No decoded MQTT exchange has verified the broker role, device credentials, topics or payloads. Closed inbound MQTT ports do not exclude an outbound MQTT client.
 
-Capturing encrypted traffic can identify connection destinations and timing. It does not normally reveal MQTT commands: decryption needs the relevant session secrets, as described in [Wireshark's TLS guide](https://wiki.wireshark.org/TLS). Replaying encrypted TCP/TLS records is not equivalent to copying an infrared code.
+Capturing encrypted traffic can identify connection destinations and timing. It does not normally reveal MQTT commands: decryption needs the relevant session secrets, as described in [Wireshark's TLS guide](https://wiki.wireshark.org/TLS). Browser session secrets would not cover a board's separate connection. TLS 1.3 also uses the outer `17 03 03` header for encrypted handshake and other content, so that signature does not identify the application protocol; see [RFC 8446](https://www.rfc-editor.org/rfc/rfc8446). Replaying encrypted TCP/TLS records is not equivalent to copying an infrared code.
 
 ## Next useful experiment
 
-Use an existing UniFi access point or gateway for a private, passive capture. [UniFi's debug console](https://help.ui.com/hc/en-us/articles/204909374-Connecting-to-UniFi-with-Debug-Tools-SSH) and [traffic-capture guidance](https://help.ui.com/hc/en-us/articles/204959834-Advanced-Logging-Information) describe the available surfaces.
+The AP Debug route now works for private, passive captures. [UniFi's debug console](https://help.ui.com/hc/en-us/articles/204909374-Connecting-to-UniFi-with-Debug-Tools-SSH) and [traffic-capture guidance](https://help.ui.com/hc/en-us/articles/204959834-Advanced-Logging-Information) describe the available surfaces. A complete private PCAP with TCP reassembly would provide stronger protocol evidence than terminal summaries and truncated samples.
 
 1. Capture only the two units' traffic on an appropriate LAN/AP interface. Include all their traffic initially, then inspect DNS, HTTP, UDP and outbound TLS on 8883/443.
 2. Record an idle baseline and exact UTC times for one normal app speed change and its restoration. Allow at least three minutes per phase, and verify reported mode, speed and motor response before retrying.
-3. Determine whether commands travel directly to a board or only through cloud connections. A connection established before capture can lack a visible handshake.
+3. Observe natural DNS and TLS negotiation to identify the service, without forcing a reconnect or reset. Determine whether commands travel directly to a board or through cloud connections. A connection established before capture can lack a visible handshake.
 
-No PCAP was obtained with current access: Mac packet capture required unavailable privileges, gateway SSH refused connections, and the available connector exposed no capture action. No network settings were changed. An ordinary Mac capture also cannot reliably observe other devices' switched unicast traffic.
+Initial attempts were blocked by unavailable Mac capture privileges, refused gateway SSH connections and a connector without a capture action. The later AP Debug session overcame the capture-access barrier and produced private packet summaries and a bounded hex sample; no complete PCAP was exported. An ordinary Mac capture also cannot reliably observe other devices' switched unicast traffic. No network settings were changed.
 
 A local implementation needs a verified command format, authentication, state readback and device confirmation. Offline operation requires a further controlled test without cloud access.
 
