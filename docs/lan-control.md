@@ -137,13 +137,21 @@ Later fresh, authenticated GETs to both owned units' cloud `/device/{id}/ip` end
 
 ## Successful local identity and register-read test
 
-The native MicroSPCM discovery callback selects GET `/dev_id` for its unprotected client and `/device_identification` for its protected client. Its shared request helper constructs a GET without a body or query; the parser expects a string in `d128`. A single unauthenticated GET `/dev_id` to each verified online stock NARAH board's station-LAN HTTP server returned HTTP 200 and a 232-byte JSON object. Each `d128` matched the correct owned cloud device ID, and each `d129` matched its known model. Returned values, headers and household identifiers remain private.
+The native MicroSPCM discovery callback selects GET `/dev_id` for its unprotected client and `/device_identification` for its protected client. Its shared request helper constructs a GET without a body or query; the parser expects a string in `d128`. A single unauthenticated GET `/dev_id` to each verified online stock NARAH board's station-LAN HTTP server returned HTTP 200 and a 232-byte JSON object. Each `d128` matched the correct owned cloud device ID, and each `d129` matched its known NARAH project code. Returned values, headers and household identifiers remain private.
 
 This establishes a functioning local identity endpoint on both tested stock boards. It does not establish an operating-state, speed or humidity endpoint, complete MicroSPCM compatibility, or offline control. The app's normal NARAH screens still follow the cloud path.
 
 The native local register-read callback constructs GET `/read` with a `registers` query and `Accept: application/json`, without a body. Its Bathroom mapping associates `MotorSpeed` with `I11`. One unauthenticated GET `/read?registers=I11` per board returned HTTP 404, a 29-byte non-JSON body. This was a reduced source-derived candidate: the native wrapper joins a mapping's addresses, and a one-address subset avoids uncertainty about its separator. The full native request was not observed. The Bathroom label does not prove a NARAH register meaning. The result applies to this request in the tested station-LAN context; it does not prove that every possible local state interface is absent.
 
 All four requests used five-second total limits, 64 KiB response caps, no credentials, redirects or retries. No pairing-key, initialization, provisioning, firmware or fan-write request was made. Local identity is now verified; operational status and control remain the next gates.
+
+The missing-route body matches an ESP-IDF default error, which provides a possible routing explanation. Espressif's [v5.5 HTTP dispatcher](https://github.com/espressif/esp-idf/blob/v5.5/components/esp_http_server/src/httpd_uri.c) matches the parsed path independently of query arguments and distinguishes a missing path (404) from a disallowed method (405) before calling a handler. Under that default behavior, changing `I11` or its separator would not fix this 404. The board's SDK version, handler table and custom behavior remain unverified; an application can also produce a 404 itself.
+
+## Web-server initialization and firmware warning
+
+The native registration sequence first checks the cloud GET `/device/{id}`. Its successful branch skips initialization; an exception branch proceeds through the IP lookup, cloud POST `/device/{id}/webserver/initialise`, a delay and equipment creation. The initialization caller supplies no body or query and discards its response. This is a registration-path mutation with unverified backend effects and lifetime, rather than an established way to wake a LAN status endpoint. It was not invoked on either already registered unit.
+
+The native firmware-warning path was also traced through a cloud basic-information read, a firmware-out-of-date exception and a warning screen. No manifest, firmware-image or download request was resolved from that slice; part of its callback remains unresolved. This adds no usable local operating-state or command request.
 
 ## Next protocol-discovery steps
 
