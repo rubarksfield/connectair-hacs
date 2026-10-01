@@ -6,6 +6,7 @@ User-facing changes, fixes and implementation findings are recorded here. Add ch
 
 ### Documentation and findings
 
+- Clarified the measurement-source evidence as fresh reads from both owned units, without implying two validation requests per unit.
 - Recorded live HACS installation of version 0.1.2 and the Home Assistant Core restart. Both native humidity entities report changing percentages, and recorder history contains numeric samples for both. One initially unavailable reading recovered on an ordinary scheduled poll without a runtime fix; its cause remains unestablished. Added and read back four humidity cards on the ventilation dashboard and two live figures on the home dashboard while preserving existing content. The ventilation readings and both history charts were visually verified in the native desktop app; the desktop view became unavailable before home-card rendering could be confirmed. Both fans continued to report 25%, with enabled, idle schedules. The 24-hour charts begin with newly recorded samples; long-term statistics, phone rendering and physical calibration were not verified. Clarified earlier observations that predated humidity support. This is a documentation-only record; local/offline control remains unproven.
 
 ## [0.1.2] — 2026-10-01

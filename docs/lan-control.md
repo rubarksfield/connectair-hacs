@@ -107,7 +107,7 @@ A filtered reference audit checked the selected Function → Class → Script ow
 
 The measurement chain is now executable evidence: `DeviceState.fromJson` reads `reading`; `Reading.fromJson` extracts `ambientHumidity` and `ambientTemperature`; the normal equipment callback copies these values to the equipment card, which displays percent and degrees Celsius. Missing values remain absent. The corresponding status values select sad/regular/happy quality icons; they are not established sensor-validity flags, so status 1 or 2 must not suppress an otherwise valid numeric reading.
 
-Two fresh authenticated GETs to each owned unit's `/state` endpoint returned numeric RH and temperature with matching device identity and online status. This resolves the earlier humidity-source gap for these NARAH units. The response contains no measurement timestamp: request receipt time does not establish the age or calibration of the hardware sample. Only humidity is added to the integration; temperature and other air-quality fields remain outside this change.
+Fresh authenticated GETs to both owned units' `/state` endpoints returned numeric RH and temperature with matching device identity and online status. This resolves the earlier humidity-source gap for these NARAH units. The response contains no measurement timestamp: request receipt time does not establish the age or calibration of the hardware sample. Only humidity is added to the integration; temperature and other air-quality fields remain outside this change.
 
 Local control remains unproven. Both boards previously refused inbound HTTPS on port 443, and a port-80 `/info` candidate returned 404. The app's local code and the factory setup address do not override that evidence or supply a usable offline command.
 
