@@ -1,6 +1,6 @@
 # Scheduling and sensor limits
 
-Two native Home Assistant schedule automations have been created, validated and enabled. Manually invoked overnight runs completed with **both units reporting 100% in Manual mode**. The actual **08:00 Europe/Lisbon time triggers on 1 October** also completed, with both units subsequently reporting **25% in Manual mode**. The 22:00 clock trigger and physical motor response remain unverified. The generic recipe below uses the existing Connectair cloud integration; `fan.ventilation_unit_1` and `fan.ventilation_unit_2` are placeholders. These documentation changes do not change runtime version **0.1.1**.
+Two native Home Assistant schedule automations have been created, validated and enabled. Manually invoked overnight runs completed with **both units reporting 100% in Manual mode**. The actual **08:00 Europe/Lisbon time triggers on 1 October** also completed, with both units subsequently reporting **25% in Manual mode**. The 22:00 clock trigger and physical motor response remain unverified. The generic recipe below uses the existing Connectair cloud integration; `fan.ventilation_unit_1` and `fan.ventilation_unit_2` are placeholders. Humidity support is added separately in runtime version **0.1.2**; the schedule rules are unchanged.
 
 ## Daily schedule for two units
 
@@ -125,14 +125,33 @@ In the inspected installation, both native fans lacked TURN_OFF and all five his
 
 The [unit manual, p50](https://statics.solerpalau.com/media/import/documentation/Ins_NARAH_160_RT.pdf#page=50) assigns standby allowance to **SW4**: ON forbids standby; OFF allows it. **SW2 controls supply/extract direction.** Pages [52](https://statics.solerpalau.com/media/import/documentation/Ins_NARAH_160_RT.pdf#page=52) and [57](https://statics.solerpalau.com/media/import/documentation/Ins_NARAH_160_RT.pdf#page=57) document remote-controlled standby at 0 m³/h, displayed as `FL0`. Actual switch positions and the reason the cloud hides Stop remain unverified; do not change hardware to try this recipe. [Night mode, pp56–58](https://statics.solerpalau.com/media/import/documentation/Ins_NARAH_160_RT.pdf#page=56), runs at minimum speed. No documented Holiday OFF alternative was established.
 
-## Humidity: sensor presence is not a cloud reading
+## Cloud-reported humidity
 
 The [manufacturer manual, pp55–56](https://statics.solerpalau.com/media/import/documentation/Ins_NARAH_160_RT.pdf#page=55), confirms a built-in humidity sensor used by automatic mode. Its presence does not prove the cloud exposes measured internal relative humidity.
 
 No validated numeric internal RH field was identified in five captured dashboards or 25 historical device-detail responses. The inspected `IR6` field represents motor PWM, not RH. Neither sensitivity settings nor unrelated registers may populate a humidity sensor. On 1 October, five fresh authenticated GETs returned the device list, both `/basic` responses and both full details successfully; none contained humidity or temperature readings. This closes the fresh-basic evidence gap, while the bounded review does not prove every vendor endpoint lacks a reading.
 
-The logged-in native iPhone app did display temperature and changing relative-humidity values on an unassigned NARAH equipment card. Its Automatic tab named the internal RH sensor. The display's data source, scaling and freshness remain unverified; a compiled Flutter-app audit found route and sensor strings but did not establish their mapping to these readings. See the [native-app investigation](lan-control.md#native-iphone-app-inspection). A changing number on an app card is insufficient to populate a measured Home Assistant sensor or chart.
+The later [executable native-app trace](lan-control.md#executable-direct-wi-fi-and-measurement-trace) identified a separate cloud GET `/device/{id}/state`. Its `reading.ambientHumidity` passes through the app's parser and equipment callback to a percentage display. Fresh authenticated responses for both owned NARAH units contained numeric humidity with matching `status.deviceId` and `status.isOnline: true`. This establishes a cloud-reported RH source; earlier list/basic/detail/dashboard reads did not use this endpoint.
+
+Version **0.1.2** adds a native **Humidity** sensor per supported unit. It uses `SensorDeviceClass.HUMIDITY`, percent units and `SensorStateClass.MEASUREMENT`, allowing normal Home Assistant history and statistics. A separate 30-second coordinator reads measurements without adding requests to fan commands or their confirmation loop. Humidity transport/protocol failures affect the humidity entity, while fan polling and commands retain their existing behavior.
+
+Only finite numeric values from 0 through 100 are accepted, with no scaling. Booleans, numeric strings, missing/null values and invalid ranges are unavailable; offline reports and mismatched device identities are not used. The app's humidity status values select comfort icons rather than a proven validity flag, so status 1 or 2 does not invalidate a numeric reading. No sensitivity or PWM setting supplies this sensor.
+
+The cloud response provides no hardware measurement timestamp. Poll receipt time establishes when Home Assistant obtained a response, not the age or calibration of the device's sample. Physical humidity calibration remains unverified, and the sensor still requires the Connectair cloud.
+
+Add the actual discovered humidity entity to a Tile card for the live figure. A native [history graph](https://www.home-assistant.io/dashboards/history-graph/) can show the last 24 hours; data begins when the sensor is installed, with no backfilled historical readings. For example, use the dashboard editor/API with the following generic card shape, replacing the placeholder entity:
+
+```yaml
+type: history-graph
+title: Relative humidity · 24 hours
+hours_to_show: 24
+min_y_axis: 0
+max_y_axis: 100
+entities:
+  - entity: sensor.your_connectair_unit_humidity
+    name: Relative humidity
+```
 
 The [manual, p60](https://statics.solerpalau.com/media/import/documentation/Ins_NARAH_160_RT.pdf#page=60), defines **C08** as internal humidity sensitivity and **C10** as external AIRSENS RH sensitivity, both settings from 1 to 5. These are not measured percentages. [Page 67](https://statics.solerpalau.com/media/import/documentation/Ins_NARAH_160_RT.pdf#page=67) lists input **30023** as the external AIRSENS probe value, interpreted using probe type **30022**; it is not the internal RH reading.
 
-Expose a numeric RH value only after its source, units, scale and freshness are validated. When no valid reading exists, retain an unavailable state rather than substituting zero or a sensitivity setting. The inspected payloads were private evidence and are not published here.
+When no valid reading exists, retain an unavailable state rather than substituting zero, a sensitivity setting or a previous successful value after a failed poll. The inspected payloads remain private and are not published here.

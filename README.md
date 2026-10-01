@@ -2,7 +2,7 @@
 
 Control S&P NARAH ventilation through its existing Connectair Wi-Fi connection. No additional Modbus adapter is required.
 
-**Version 0.1.1:** real PKCE sign-in, refresh-token renewal, independent device control and live Home Assistant enrollment have been verified. Two NARAH 160 RT units were discovered; a Home Assistant Medium-to-Low control test completed against reported speed registers. This patch protects formatted error tracebacks from underlying private provider details. Automated tests run against Home Assistant 2026.9.2.
+**Version 0.1.2:** adds device-reported humidity from the native app's cloud status endpoint, with an independent measurement poll and native Home Assistant history support. Renewable sign-in, independent device control and live enrollment were verified in earlier releases. Automated tests run against Home Assistant 2026.9.2.
 
 [![Add to HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=rubarksfield&repository=connectair-hacs&category=integration)
 [![Add integration](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=connectair)
@@ -15,7 +15,8 @@ Changes and implementation findings are recorded in the [changelog](CHANGELOG.md
 
 - Automatically discovers the units linked to your Connectair account.
 - Native fan entities: Low (25%), Medium (50%), High (75%) and Extra High (100%). Setting a speed selects a supported manual mode when needed. Stop/0% is available only when the unit exposes an enabled Stop control.
-- Reported speed, operating mode, filter replacement countdown and connectivity sensors.
+- Reported speed, operating mode, filter replacement countdown, connectivity and relative-humidity sensors.
+- Humidity reads independently every 30 seconds. Missing, invalid or offline readings become unavailable; failed measurements do not interrupt fan controls. Values are cloud-reported percentages, with no hardware sample timestamp or calibration guarantee.
 - Reads every 30 seconds. Commands are serialized per unit and confirmed using reported registers before Home Assistant shows success. Cloud delivery or status reporting may take several minutes; each acknowledged command has a three-minute confirmation deadline. If confirmation times out, the command may still arrive later; check the reported state before retrying.
 - Renewable sign-in, refresh-token rotation and Home Assistant reauthentication.
 - Diagnostics omit account identifiers, device identifiers, names, raw dashboards and credentials.
@@ -38,7 +39,7 @@ For advanced setup, an optional **Refresh token (advanced)** field accepts a pri
 
 ## Dashboard and automations
 
-See the [daily scheduling and sensor guide](docs/scheduling-and-sensors.md) for a maximum-speed overnight schedule, manual overrides, capability-aware Off buttons and the current limits on measured humidity.
+See the [daily scheduling and sensor guide](docs/scheduling-and-sensors.md) for a maximum-speed overnight schedule, manual overrides, capability-aware Off buttons, live humidity figures and history charts.
 
 Use Home Assistant Tile cards for status, with separate speed buttons for **25%, 50%, 75% and 100%**. The native fan-speed slider includes 0%, which is unsupported on units without Stop. Set tile and icon taps to **More info** when Stop is unavailable. The native fan entities work with normal actions, for example:
 

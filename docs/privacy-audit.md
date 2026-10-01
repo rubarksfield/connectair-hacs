@@ -29,3 +29,9 @@ The five existing published commits contain the author name/email inherited from
 ## Continuing maintenance
 
 Follow [AGENTS.md](../AGENTS.md), record fixes and findings in [CHANGELOG.md](../CHANGELOG.md), and repeat the privacy checks before publication. Never attach raw callbacks, tokens, HAR/PCAP files or private Home Assistant configuration to public issues.
+
+### Version 0.1.2 review
+
+The humidity changes and executable-trace documentation were independently reviewed before publication. Pinned Gitleaks history and staged scans returned zero findings. A separate private comparison of 90 historical blobs and tracked working files against current credentials and known household identifiers also returned zero matches, without printing their values. No files under `private/` are tracked, and ignore checks covered the new decoder exports, local tools and capture evidence.
+
+Compiled authentication material encountered during native-app analysis remains owner-only private evidence; it is not included in source, fixtures, documentation or release material and is not used by this integration. New humidity requests reuse Home Assistant's existing verified HTTP session and private token provider, with no raw response or device-ID logging. Synthetic tests cover identity validation, unavailable readings and sanitized reauthentication. These checks supplement, rather than replace, the publication rules above.

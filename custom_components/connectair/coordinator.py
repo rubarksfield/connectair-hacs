@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import ConfigEntryAuthFailed, HomeAssistantError
 from homeassistant.helpers.device_registry import DeviceInfo
+from homeassistant.helpers.entity import Entity
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.helpers.update_coordinator import (
     CoordinatorEntity,
@@ -36,6 +37,7 @@ class ConnectairCoordinator(DataUpdateCoordinator[dict[str, DeviceState | None]]
         self.devices: dict[str, Device] = {}
         self.data = {}
         self._command_versions: dict[str, int] = {}
+        self.humidity_coordinator = ConnectairHumidityCoordinator(hass, entry, self)
 
     async def _async_update_data(self) -> dict[str, DeviceState | None]:
         versions = self._command_versions.copy()
@@ -83,6 +85,93 @@ class ConnectairCoordinator(DataUpdateCoordinator[dict[str, DeviceState | None]]
         self.async_set_updated_data({**self.data, device_id: state})
 
 
+class ConnectairHumidityCoordinator(DataUpdateCoordinator[dict[str, float | None]]):
+    """Read optional RH independently of fan polling and command confirmation."""
+
+    def __init__(
+        self, hass: HomeAssistant, entry: ConnectairConfigEntry, parent: ConnectairCoordinator
+    ) -> None:
+        super().__init__(
+            hass,
+            _LOGGER,
+            name=f"{DOMAIN} humidity",
+            config_entry=entry,
+            update_interval=UPDATE_INTERVAL,
+        )
+        self.parent = parent
+        self.data = {}
+        self._parent_online: dict[str, bool] = {}
+        self._supported_devices: set[str] = set()
+        self._availability_versions: dict[str, int] = {}
+        self._next_availability_version = 0
+        entry.async_on_unload(parent.async_add_listener(self._handle_parent_update))
+
+    @callback
+    def _handle_parent_update(self) -> None:
+        """Invalidate stale readings immediately when the known device goes away."""
+        self._supported_devices.intersection_update(self.parent.devices)
+        self._supported_devices.update(
+            device_id for device_id, state in self.parent.data.items() if state is not None
+        )
+        online = {
+            device_id: (
+                self.parent.last_update_success
+                and device.online
+                and device_id in self._supported_devices
+                and ((state := self.parent.data.get(device_id)) is None or state.device.online)
+            )
+            for device_id, device in self.parent.devices.items()
+        }
+        if online == self._parent_online:
+            return
+        versions = {}
+        for device_id, is_online in online.items():
+            if self._parent_online.get(device_id) != is_online:
+                self._next_availability_version += 1
+                versions[device_id] = self._next_availability_version
+            else:
+                versions[device_id] = self._availability_versions[device_id]
+        self._availability_versions = versions
+        self._parent_online = online
+        self.data = {
+            device_id: self.data.get(device_id) if is_online else None
+            for device_id, is_online in online.items()
+        }
+        self.async_update_listeners()
+
+    async def _async_update_data(self) -> dict[str, float | None]:
+        devices = tuple(self.parent.devices.values())
+        versions = self._availability_versions.copy()
+
+        async def fetch(device: Device) -> float | None:
+            if not self._parent_online.get(device.device_id, False):
+                return None
+            try:
+                return await self.parent.client.async_get_humidity(device.device_id)
+            except AuthenticationError:
+                raise ConfigEntryAuthFailed("Connectair login expired") from None
+            except ConnectairError:
+                return None
+
+        try:
+            readings = await asyncio.gather(*(fetch(device) for device in devices))
+        except ConfigEntryAuthFailed:
+            self.data = dict.fromkeys(self.parent.devices)
+            raise
+        result = dict(zip((device.device_id for device in devices), readings, strict=True))
+        # A read begun before an offline/removed transition remains stale even
+        # if that device reconnects before the response arrives.
+        return {
+            device_id: result.get(device_id)
+            if (
+                self._parent_online.get(device_id, False)
+                and self._availability_versions.get(device_id) == versions.get(device_id)
+            )
+            else None
+            for device_id in self.parent.devices
+        }
+
+
 class ConnectairEntity(CoordinatorEntity[ConnectairCoordinator]):
     """Stable per-device identity and availability shared by native entities."""
 
@@ -116,7 +205,7 @@ class ConnectairEntity(CoordinatorEntity[ConnectairCoordinator]):
 def async_add_device_entities(
     entry: ConnectairConfigEntry,
     async_add_entities: AddConfigEntryEntitiesCallback,
-    factory: Callable[[ConnectairCoordinator, str], list[ConnectairEntity]],
+    factory: Callable[[ConnectairCoordinator, str], list[Entity]],
     *,
     require_supported_state: bool = False,
 ) -> None:

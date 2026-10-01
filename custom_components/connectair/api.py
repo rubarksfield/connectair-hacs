@@ -165,6 +165,39 @@ class ConnectairClient:
         )
         return parse_dashboard(device, dashboard)
 
+    async def async_get_humidity(self, device_id: str) -> float | None:
+        """Read cloud-reported humidity; comfort status is not a validity flag."""
+        requested_id = str(device_id)
+        path_id = quote(requested_id, safe="")
+        result = await self._request("GET", f"/device/{path_id}/state")
+        if not isinstance(result, dict):
+            raise ProtocolError("Connectair returned invalid measurement details")
+        status = result.get("status")
+        if (
+            not isinstance(status, dict)
+            or status.get("deviceId") != requested_id
+            or not isinstance(status.get("isOnline"), bool)
+        ):
+            raise ProtocolError("Connectair returned invalid measurement identity")
+        if not status["isOnline"]:
+            return None
+        if "reading" not in result:
+            raise ProtocolError("Connectair returned invalid measurement details")
+        reading = result["reading"]
+        if reading is None:
+            return None
+        if not isinstance(reading, dict):
+            raise ProtocolError("Connectair returned invalid measurement details")
+        humidity = reading.get("ambientHumidity")
+        if (
+            isinstance(humidity, bool)
+            or not isinstance(humidity, (int, float))
+            or not 0 <= humidity <= 100
+            or not math.isfinite(humidity)
+        ):
+            return None
+        return float(humidity)
+
     async def _send(self, state: DeviceState, group: dict[str, Any], register: str) -> None:
         payload = build_command(state, group, register)
         path_id = quote(state.device.device_id, safe="")

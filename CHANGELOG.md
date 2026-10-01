@@ -4,8 +4,19 @@ User-facing changes, fixes and implementation findings are recorded here. Add ch
 
 ## [Unreleased]
 
+## [0.1.2] — 2026-10-01
+
+### Added
+
+- Native relative-humidity sensors for supported NARAH units, using the verified cloud `/device/{id}/state` endpoint and percent/measurement metadata for Home Assistant history and statistics.
+- Independent measurement polling so humidity requests and failures do not delay fan updates or add reads to command confirmation. Device identity, online status and finite numeric percentages are validated; missing or invalid readings become unavailable.
+- Rejects delayed measurements after an offline/reconnect or removal/re-add transition, and respects a newer offline detail report even when the account list still says online. Never-supported units are not queried for measurements.
+- Validation: 221 tests passed against Home Assistant 2026.9.2, including native scheduled-first-poll/unload checks, humidity failure isolation, command separation and reconnect regressions. Ruff lint/format, whitespace checks and independent review passed.
+
 ### Documentation and findings
 
+- Privately decoded and traced the official native app's request construction with a corrected, reviewed parser and strict sandboxed execution. Verified that speed/mode methods use the cloud API, Direct Wi-Fi discovery uses `_https._tcp`, and factory `/read`/`/write` paths use a fixed setup address. Protected local helpers have not been associated with a usable NARAH LAN command; local/offline control remains unproven. Raw exports and compiled authentication material remain private. See the [executable trace](docs/lan-control.md#executable-direct-wi-fi-and-measurement-trace).
+- Identified the native card's measurement source: authenticated cloud GET `/device/{id}/state`, whose `reading.ambientHumidity` is displayed as percent. Fresh responses from both owned NARAH units returned numeric RH with matching identity and online status. Comfort status icons do not establish validity, and the response has no hardware measurement timestamp. This supersedes the earlier unresolved humidity-source finding; list/basic/detail/dashboard responses still do not supply that measurement.
 - Obtained and privately analysed the first USB phone recording: recovered 303 complete packets from a valid PCAPNG section after a stray classic header, with the original untouched. Verified vendor-API TLS connections, gratuitous ARP announcements from both fans and no captured TCP/UDP IP traffic to the boards; no plaintext command or RH value was recovered. Fixed a private capture-stop race with a regression proven failing before the lock fix and passing afterward; all 16 helper checks passed. Future captures explicitly select Apple's PCAPNG format. The original capture lacks drop statistics and retains its failed lifecycle report; RVI/capture processes stopped, while the SIP-protected Apple helper registration remains dormant. The revised helper has not yet been rerun on the phone. Raw evidence and household identifiers remain private; these findings do not establish local control. See the [LAN investigation](docs/lan-control.md).
 - Prepared USB iPhone packet capture after operator approval of the Xcode licence. Verified installation of Apple's signed capture components and an already paired, wired phone without changing phone permissions or enabling optional external-agent access. The initial RVI start reported `bootstrap_look_up(): 1102` despite exit status zero; the installed Apple helper was not loaded and the agent lacked administrator access. At that preparation stage no working RVI or phone PCAP was verified; the later operator run and analysis are recorded above. Recorded the original plist's relocation behavior and narrow-filter/TLS limitations in the [LAN investigation](docs/lan-control.md); identifiers and setup evidence remain private.
 - Inspected the logged-in native iPhone app and privately audited the official Mac App Store bundle, version 3.1.17/build 115. Confirmed compiled Flutter logic and provisioning/discovery dependencies; Direct Wi-Fi method and route strings do not yet establish their host, model or command format. One bounded, unauthenticated local `GET /info` returned HTTP 404/non-JSON, with no control payload or retry. Recorded temperature and changing RH displays as app observations with an unresolved measurement source. Five fresh authenticated GETs returned the device list and both basic/full details without numeric RH or temperature readings, closing the previous fresh-basic gap. Independent token refresh, fan commands and phone/network security changes were not performed. Updated the [LAN investigation](docs/lan-control.md) and [sensor guide](docs/scheduling-and-sensors.md); independent request/firmware tracing is the next gate, without requiring a manufacturer response.
@@ -19,7 +30,7 @@ User-facing changes, fixes and implementation findings are recorded here. Add ch
 - Schedule validation covered 20 native-evaluator contexts, seven time-edge checks and genuine Home Assistant 2026.9.2 YAML schema validation. The later 08:00 clock-trigger verification is recorded above; the 22:00 trigger and physical fan response remain unverified.
 - Recorded the current Stop boundary: inspected units lack TURN_OFF and cloud Stop is hidden. The manufacturer documents standby allowance on SW4; no hidden controls or hardware settings were changed.
 - Distinguished the built-in humidity sensor from an exposed measurement. Five cloud dashboards and 25 historical device-detail responses supplied no validated numeric internal RH field; a fresh `/basic` payload remains an evidence gap. Motor PWM and C08/C10 sensitivity settings are not RH readings, and Modbus 30023 refers to the external AIRSENS probe.
-- These documentation changes do not change runtime version 0.1.1.
+- The findings above were gathered incrementally while runtime 0.1.1 remained installed. Runtime 0.1.2 adds humidity; earlier unresolved-source observations are superseded by the executable trace and fresh `/state` reads.
 
 ## [0.1.1] — 2026-10-01
 
@@ -63,6 +74,7 @@ User-facing changes, fixes and implementation findings are recorded here. Add ch
 - Boost, automatic-mode selection, unsupported models and local/offline control are not implemented.
 - Release validation: 153 tests passed against genuine Home Assistant 2026.9.2; Ruff lint/format and release CI passed. Live enrollment, Home Assistant control and restart persistence were verified separately.
 
-[Unreleased]: https://github.com/rubarksfield/connectair-hacs/compare/v0.1.1...main
+[Unreleased]: https://github.com/rubarksfield/connectair-hacs/compare/v0.1.2...main
+[0.1.2]: https://github.com/rubarksfield/connectair-hacs/releases/tag/v0.1.2
 [0.1.1]: https://github.com/rubarksfield/connectair-hacs/releases/tag/v0.1.1
 [0.1.0]: https://github.com/rubarksfield/connectair-hacs/releases/tag/v0.1.0

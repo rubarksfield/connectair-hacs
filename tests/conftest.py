@@ -25,7 +25,10 @@ def compatible_mock_response(monkeypatch):
 
 
 @pytest.fixture
-def account_entry(hass):
+async def account_entry(hass):
     entry = MockConfigEntry(domain="connectair", unique_id="account-a", data={})
     entry.add_to_hass(hass)
-    return entry
+    yield entry
+    # Direct coordinator tests do not load platforms, so HA has no loaded
+    # integration to unload. Process the same registered lifecycle callbacks.
+    await entry._async_process_on_unload(hass)

@@ -5,12 +5,20 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from homeassistant.components.sensor import SensorDeviceClass, SensorEntity, SensorStateClass
-from homeassistant.const import UnitOfTime
+from homeassistant.const import PERCENTAGE, UnitOfTime
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
+from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .coordinator import ConnectairCoordinator, ConnectairEntity, async_add_device_entities
+from .const import DOMAIN
+from .coordinator import (
+    ConnectairCoordinator,
+    ConnectairEntity,
+    ConnectairHumidityCoordinator,
+    async_add_device_entities,
+)
 
 if TYPE_CHECKING:
     from . import ConnectairConfigEntry
@@ -30,7 +38,10 @@ async def async_setup_entry(
     async_add_device_entities(
         entry,
         async_add_entities,
-        lambda c, d: [ConnectairSensor(c, d, key) for key in SENSOR_NAMES],
+        lambda c, d: [
+            *(ConnectairSensor(c, d, key) for key in SENSOR_NAMES),
+            ConnectairHumiditySensor(c.humidity_coordinator, d),
+        ],
         require_supported_state=True,
     )
 
@@ -56,3 +67,42 @@ class ConnectairSensor(ConnectairEntity, SensorEntity):
     def native_value(self) -> int | None:
         state = self.device_state
         return getattr(state, self.key) if state is not None else None
+
+
+class ConnectairHumiditySensor(CoordinatorEntity[ConnectairHumidityCoordinator], SensorEntity):
+    """Expose a validated ambient RH reading, without inventing a sample timestamp."""
+
+    _attr_has_entity_name = True
+    _attr_name = "Humidity"
+    _attr_device_class = SensorDeviceClass.HUMIDITY
+    _attr_native_unit_of_measurement = PERCENTAGE
+    _attr_state_class = SensorStateClass.MEASUREMENT
+
+    def __init__(self, coordinator: ConnectairHumidityCoordinator, device_id: str) -> None:
+        super().__init__(coordinator, context=device_id)
+        self.device_id = device_id
+        self._attr_unique_id = f"{device_id}_humidity"
+        device = coordinator.parent.devices[device_id]
+        self._attr_device_info = DeviceInfo(
+            identifiers={(DOMAIN, device_id)},
+            name=device.name,
+            manufacturer="Soler & Palau",
+            model=device.model,
+            configuration_url="https://www.connectairapp.com",
+        )
+
+    @property
+    def native_value(self) -> float | None:
+        return self.coordinator.data.get(self.device_id)
+
+    @property
+    def available(self) -> bool:
+        parent = self.coordinator.parent
+        device = parent.devices.get(self.device_id)
+        return (
+            super().available
+            and parent.last_update_success
+            and device is not None
+            and device.online
+            and self.native_value is not None
+        )

@@ -143,6 +143,108 @@ async def test_user_is_validated_at_real_endpoint(session):
         }
 
 
+@pytest.mark.parametrize("humidity", [0, 50, 51.5, 100])
+@pytest.mark.parametrize("comfort_status", [1, 2, 3])
+async def test_humidity_reads_owned_online_state_without_unit_conversion(
+    session, humidity, comfort_status
+):
+    def state_response(url, **kwargs):
+        assert kwargs["headers"]["Origin"] == "https://www.connectairapp.com"
+        assert kwargs["headers"]["Authorization"] == "Bearer test-access-token"
+        assert kwargs["allow_redirects"] is False
+        return CallbackResult(
+            payload={
+                "status": {"deviceId": "demo-unit", "isOnline": True},
+                "reading": {
+                    "ambientHumidity": humidity,
+                    "ambientHumidityStatus": comfort_status,
+                    "ambientTemperature": 24,
+                },
+            }
+        )
+
+    with aioresponses() as responses:
+        responses.get(f"{BASE}/device/demo-unit/state", callback=state_response)
+        assert await client(session).async_get_humidity("demo-unit") == float(humidity)
+
+
+@pytest.mark.parametrize(
+    "humidity", [None, True, False, "50", -1, 101, float("nan"), float("inf"), [], {}]
+)
+async def test_humidity_invalid_or_missing_measurement_is_unknown(session, humidity):
+    with aioresponses() as responses:
+        responses.get(
+            f"{BASE}/device/demo-unit/state",
+            payload={
+                "status": {"deviceId": "demo-unit", "isOnline": True},
+                "reading": {"ambientHumidity": humidity},
+            },
+        )
+        assert await client(session).async_get_humidity("demo-unit") is None
+
+
+@pytest.mark.parametrize("reading", [None, {}, {"ambientTemperature": 24}])
+async def test_humidity_absent_reading_remains_unknown(session, reading):
+    with aioresponses() as responses:
+        responses.get(
+            f"{BASE}/device/demo-unit/state",
+            payload={"status": {"deviceId": "demo-unit", "isOnline": True}, "reading": reading},
+        )
+        assert await client(session).async_get_humidity("demo-unit") is None
+
+
+async def test_humidity_offline_response_does_not_publish_cached_number(session):
+    with aioresponses() as responses:
+        responses.get(
+            f"{BASE}/device/demo-unit/state",
+            payload={
+                "status": {"deviceId": "demo-unit", "isOnline": False},
+                "reading": {"ambientHumidity": 51},
+            },
+        )
+        assert await client(session).async_get_humidity("demo-unit") is None
+
+
+@pytest.mark.parametrize(
+    "body",
+    [
+        [],
+        {},
+        {"status": None, "reading": {}},
+        {"status": {"deviceId": "another-unit", "isOnline": True}, "reading": {}},
+        {"status": {"deviceId": "demo-unit", "isOnline": 1}, "reading": {}},
+        {"status": {"deviceId": "demo-unit"}, "reading": {}},
+        {"status": {"isOnline": True}, "reading": {}},
+        {"status": {"deviceId": "demo-unit", "isOnline": True}},
+        {"status": {"deviceId": "demo-unit", "isOnline": True}, "reading": []},
+    ],
+)
+async def test_humidity_rejects_malformed_or_wrong_device_response(session, body):
+    with aioresponses() as responses:
+        responses.get(f"{BASE}/device/demo-unit/state", payload=body)
+        with pytest.raises(ProtocolError):
+            await client(session).async_get_humidity("demo-unit")
+
+
+async def test_humidity_state_read_uses_existing_single_refresh_policy(session):
+    async def provider(force_refresh=False):
+        return "fresh-token" if force_refresh else "expired-token"
+
+    def fresh_state(url, **kwargs):
+        assert kwargs["headers"]["Authorization"] == "Bearer fresh-token"
+        return CallbackResult(
+            payload={
+                "status": {"deviceId": "demo-unit", "isOnline": True},
+                "reading": {"ambientHumidity": 50},
+            }
+        )
+
+    with aioresponses() as responses:
+        responses.get(f"{BASE}/device/demo-unit/state", status=401)
+        responses.get(f"{BASE}/device/demo-unit/state", callback=fresh_state)
+        assert await ConnectairClient(session, provider).async_get_humidity("demo-unit") == 50
+
+
 async def test_dashboard_read_uses_units_configuration(session):
     def dashboard_response(url, **kwargs):
         assert kwargs["json"] == {
