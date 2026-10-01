@@ -1,6 +1,6 @@
 # LAN control investigation
 
-Reviewed 1 October 2026 for NARAH 160 RT units with existing SPCM NARAH Wi-Fi boards.
+Reviewed 2 October 2026 for NARAH 160 RT units with existing SPCM NARAH Wi-Fi boards.
 
 **Local fan control remains unproven.** The installed integration works through the Connectair cloud without additional hardware. The boards expose a local registration page, but no verified LAN speed-control endpoint has been found.
 
@@ -209,7 +209,9 @@ The previously unresolved UDP/8080 traffic matches the existing Home Assistant G
 
 The retained official web deployment's named JavaScript import graph was completed to 67 referenced scripts. A bounded lexical scan found no stock firmware image or manifest URL. Two additional manufacturer NARAH manuals also supplied no update URL or LAN API. Their register tables confirm current master speed at Modbus 30006 and read-only SW3 status at 10012; they do not validate the native Bathroom `I11` association or establish a stock Wi-Fi-to-Modbus bridge. These bounded source reviews do not prove that firmware is unobtainable or that the board lacks an undocumented interface. Overnight update traffic remains the next concrete artifact-discovery lead.
 
-Later immutable snapshots extend the observed window to approximately 22:38 UTC without stopping the recordings. Independent validation found 7,158 and 14,586 complete, untruncated records, matching remote/export hashes and no out-of-scope IPv4 records. The two units have 20 and 21 TCP flows respectively, all to internet peers on remote port 8883; there are no new DNS question names, local TCP flows, plaintext HTTP requests or recoverable firmware URL/text candidates. Encrypted transfers cannot be excluded, and final capture/drop statistics remain pending. This extends the observation window without establishing a LAN command or status read.
+Later immutable snapshots extend the observed window to approximately 23:15 UTC (00:15 Lisbon time) without stopping the recordings. Validation found 8,514 and 17,254 complete, untruncated records, matching remote/export hashes and no out-of-scope IPv4 records. Each unit has 24 TCP flows, all to internet peers on remote port 8883; compared with the earlier snapshots, there are no new DNS question or TLS SNI names, local TCP flows, plaintext HTTP requests or recoverable firmware URL/text candidates. The original process identities, boot and file inodes remained verified before and after export. Encrypted transfers cannot be excluded, and final capture/drop statistics remain pending. The boards' update-check timezone is unverified; this early sample does not complete observation of the documented overnight window or establish a LAN command or status read.
+
+Separate read-only checks of both APs' current IPv6 neighbour caches found no entries matching their owned board's MAC. This supplied no concrete IPv6 address to investigate, but missing cache entries do not prove that either board lacks IPv6. The ongoing recordings retain their stated IPv4-only scope; no neighbour probes or network changes were made.
 
 ## Traffic-correlation experiment
 
