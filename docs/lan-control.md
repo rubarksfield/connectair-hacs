@@ -35,7 +35,7 @@ We have enough information to test listener availability, but not to issue a ver
 
 ## Passive access-point captures
 
-On 1 October, read-only UniFi inspection confirmed that each board was associated with its existing locked access point. After the operator accepted UniFi's Debug notice, both AP shells connected and supplied `tcpdump`. No SSH credentials were retrieved and no AP, network or device configuration was changed.
+On 1 October, read-only UniFi inspection confirmed that each board was associated with its existing locked access point. After the operator accepted UniFi's Debug notice, both AP shells connected and supplied `tcpdump`. During these earlier Debug captures, no SSH credentials were retrieved and no AP, network or device configuration was changed.
 
 A nonpromiscuous, board-filtered capture on one AP's `br0` ran for three minutes and showed only three ARP announcements. A subsequent capture on `any` exposed that board's transit traffic. This comparison shows why the bridge-only result cannot establish an absence of cloud traffic. The exact kernel/driver forwarding path was not identified.
 
@@ -167,9 +167,31 @@ A protocol checklist, if manufacturer documentation becomes available:
 
 No supported stock Wi-Fi control interface has yet been established. Further native request tracing or firmware evidence may resolve that gap; neither guarantees that the existing firmware implements offline control.
 
+## Direct AP SSH capture access
+
+Native SSH connections subsequently authenticated to both existing APs using their configured UniFi network-device SSH credentials. No SSH enablement, AP settings or network configuration was changed. This establishes a direct terminal route for passive capture and private binary export; the first exported baselines are described below.
+
+[UniFi's SSH guidance](https://help.ui.com/hc/en-us/articles/204909374-Connecting-to-UniFi-with-Debug-Tools-SSH) distinguishes network-device SSH settings from console SSH settings. These device credentials are separate from the UniFi web-account, Connectair and Home Assistant credentials; gateway or console SSH access is not established by successful AP access. Credentials and authentication evidence remain private.
+
+The AP host keys were initially accepted on first use and retained in a private known-hosts file. Later checks matched both APs' RSA fingerprints against the controller's recorded device fingerprints and confirmed continuity of the previously pinned Ed25519 keys at the APs' current addresses. Subsequent connections require the verified, pinned keys and reject a mismatch, with automatic key updates disabled. The first connections used trust on first use; the controller comparison supplied a later independent check.
+
+The same [official guidance](https://help.ui.com/hc/en-us/articles/204909374-Connecting-to-UniFi-with-Debug-Tools-SSH) warns against pasting long commands into Debug and recommends checking pasted commands before execution. Direct SSH avoids that particular input limitation. The planned captures remain nonpromiscuous, restricted to each owned fan and bounded by duration, packet count and file size. Capture access alone establishes neither local fan status nor a control protocol.
+
+## Exported baselines and overnight capture
+
+Two private, nonpromiscuous AP baselines were limited to 20 seconds or 40 packets, with full packet snapshots and each fan's IPv4 traffic across all ports. Their exported file hashes matched the remote originals. Independent container checks found 40 and 14 complete, untruncated records respectively, no malformed packet headers and no out-of-scope IPv4 records; both captures reported zero kernel drops. These checks validate the files and observed scope, not complete network visibility or unique-packet counts. Packet records are retained without deduplication. One completed baseline was recovered after its SSH connection dropped; the investigator changed no network settings.
+
+One baseline contains DNS exchanges and a natural TLS handshake attempt toward an Azure IoT hostname: the ClientHello SNI matches the queried name, and the captured server certificate contains the Azure device-service wildcard. The actual ServerHello selects TLS 1.2 and `TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256`; this follows the [TLS 1.2 ServerHello fields](https://www.rfc-editor.org/rfc/rfc5246#section-7.4.1.3) and [IANA cipher-suite assignment](https://www.iana.org/assignments/tls-parameters/tls-parameters.xhtml#tls-parameters-4), rather than inferring the negotiated version from the outer record header. The capture stops before handshake completion; certificate trust validation and a completed application session are not established by this passive sample. The hub hostname, DNS answers, certificates and raw packet data remain private. No MQTT content, plaintext HTTP command or local status was recovered.
+
+The other baseline contains local UDP datagrams addressed to port 8080 and board-sent ICMP port-unreachable records quoting matching UDP tuples. Their application origin and payload meaning have not been established, so they are not evidence of a usable fan-control or status protocol. This short window contains no TCP, DNS or TLS exchange; it does not establish their absence at other times.
+
+Longer passive captures were subsequently launched on both APs, and the expected runner, timeout and capture processes were observed active. Each uses one private, non-overwriting file, only its owned fan's IPv4 traffic across all ports, full packet snapshots, and limits of 12 hours, 8 MiB and 200,000 packets, stopping at the first limit. Natural traffic is observed without forcing a reconnect, update or fan command. Collection, successful completion, export and analysis are still pending; no overnight update or additional protocol finding is claimed.
+
+The hard file limit can leave an incomplete final packet record and omit final drop statistics. Such a result must retain that limitation rather than be reported as a complete, lossless capture. IPv6 visibility is outside these captures' filter scope.
+
 ## Traffic-correlation experiment
 
-The AP Debug route now works for private, passive captures. [UniFi's debug console](https://help.ui.com/hc/en-us/articles/204909374-Connecting-to-UniFi-with-Debug-Tools-SSH) and [traffic-capture guidance](https://help.ui.com/hc/en-us/articles/204959834-Advanced-Logging-Information) describe the available surfaces. A complete private PCAP with TCP reassembly would provide stronger protocol evidence than terminal summaries and truncated samples.
+The earlier AP Debug route supplied private packet summaries and a bounded sample; direct AP SSH now supplies the validated baselines described above. [UniFi's traffic-capture guidance](https://help.ui.com/hc/en-us/articles/204959834-Advanced-Logging-Information) describes the available capture surfaces. Longer recordings can extend the initial TCP analysis and reveal natural connection or update traffic absent from a short sample.
 
 1. Capture only the two units' traffic on an appropriate LAN/AP interface. Include all their traffic initially, then inspect DNS, HTTP, UDP and outbound TLS on 8883/443.
 2. Record an idle baseline and exact UTC times for one normal app speed change and its restoration. Allow at least three minutes per phase, and verify reported mode, speed and motor response before retrying.
