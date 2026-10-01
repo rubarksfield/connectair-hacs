@@ -145,6 +145,8 @@ The native local register-read callback constructs GET `/read` with a `registers
 
 All four requests used five-second total limits, 64 KiB response caps, no credentials, redirects or retries. No pairing-key, initialization, provisioning, firmware or fan-write request was made. Local identity is now verified; operational status and control remain the next gates.
 
+Further offline comparison identifies product metadata: `d5` matches the same device's cloud model/product name and `d6` its range name. Manufacturer and vendor-website values at `d0` and `d3` also align with the object numbering in the [Modbus Device Identification specification, section 6.21](https://www.modbus.org/file/secure/modbusprotocolspecification.pdf#page=43). This supports an **adapted Modbus-style identification dictionary** as an inference, without proving that the HTTP handler performs Modbus function 43/14 or exposes a register bridge. The standard assigns object 2 to `MajorMinorRevision`, but the component/version represented by `d2` remains unverified; object 7 is reserved and remains unassigned here. None of `d0`–`d7` matches the retained cloud firmware field, even after trimming padding. Raw values remain private, and this association supplies no new operating-state endpoint or command.
+
 The missing-route body matches an ESP-IDF default error, which provides a possible routing explanation. Espressif's [v5.5 HTTP dispatcher](https://github.com/espressif/esp-idf/blob/v5.5/components/esp_http_server/src/httpd_uri.c) matches the parsed path independently of query arguments and distinguishes a missing path (404) from a disallowed method (405) before calling a handler. Under that default behavior, changing `I11` or its separator would not fix this 404. The board's SDK version, handler table and custom behavior remain unverified; an application can also produce a 404 itself.
 
 ## Web-server initialization and firmware warning
@@ -152,6 +154,8 @@ The missing-route body matches an ESP-IDF default error, which provides a possib
 The native registration sequence first checks the cloud GET `/device/{id}`. Its successful branch skips initialization; an exception branch proceeds through the IP lookup, cloud POST `/device/{id}/webserver/initialise`, a delay and equipment creation. The initialization caller supplies no body or query and discards its response. This is a registration-path mutation with unverified backend effects and lifetime, rather than an established way to wake a LAN status endpoint. It was not invoked on either already registered unit.
 
 The native firmware-warning path was also traced through a cloud basic-information read, a firmware-out-of-date exception and a warning screen. No manifest, firmware-image or download request was resolved from that slice; part of its callback remains unresolved. This adds no usable local operating-state or command request.
+
+A further original-byte audit of seven selected methods resolves the warning button's direct behavior: it invokes a supplied function, then calls `Navigator.pop`, without constructing an updater request itself. The supplied function's upstream field/type binding remains unresolved. This does not establish that the complete warning flow only navigates, or that an update request cannot occur inside the supplied function. No firmware artifact or new LAN route was obtained.
 
 ## Next protocol-discovery steps
 
@@ -185,9 +189,11 @@ One baseline contains DNS exchanges and a natural TLS handshake attempt toward a
 
 The other baseline contains local UDP datagrams addressed to port 8080 and board-sent ICMP port-unreachable records quoting matching UDP tuples. Their application origin and payload meaning have not been established, so they are not evidence of a usable fan-control or status protocol. This short window contains no TCP, DNS or TLS exchange; it does not establish their absence at other times.
 
-Longer passive captures were subsequently launched on both APs, and the expected runner, timeout and capture processes were observed active. Each uses one private, non-overwriting file, only its owned fan's IPv4 traffic across all ports, full packet snapshots, and limits of 12 hours, 8 MiB and 200,000 packets, stopping at the first limit. Natural traffic is observed without forcing a reconnect, update or fan command. The snapshots below were exported while collection continued; completed overnight captures and an observed update remain pending.
+Longer passive captures were subsequently launched on both APs, and the runner and capture processes were observed active. Each uses one private, non-overwriting file, only its owned fan's IPv4 traffic across all ports, full packet snapshots, and limits of 12 hours, 8 MiB and 200,000 packets, stopping at the first limit. Natural traffic is observed without forcing a reconnect, update or fan command. The snapshots below were exported while collection continued; completed overnight captures and an observed update remain pending.
 
 The hard file limit can leave an incomplete final packet record and omit final drop statistics. Such a result must retain that limitation rather than be reported as a complete, lossless capture. IPv6 visibility is outside these captures' filter scope.
+
+One private continuity watcher per AP was subsequently armed and verified waiting, with the original recordings still live. Live process checks establish that the AP's timeout utility replaces itself with the capture process; it is not a third process handle. A watcher may dispatch one separate, non-overwriting recording only after the original process handles have ended and saved exit evidence proves an early size or packet limit. The follow-up keeps the original 12-hour deadline and its own 8-MiB/200,000-packet limits, with fresh resource and competing-capture checks. Unknown exits, resource failures or the normal deadline do not trigger it. Offline tests cover the guards and SSH input handling; neither follow-up capture has started or completed at this checkpoint. Original captures and network settings were preserved, and all helpers and raw evidence remain private.
 
 ### Longer capture snapshots
 
