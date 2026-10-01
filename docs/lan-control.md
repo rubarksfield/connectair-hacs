@@ -53,7 +53,21 @@ The board probably uses **MQTT over TLS**. [Espressif's ESP-MQTT documentation](
 
 Capturing encrypted traffic can identify connection destinations and timing. It does not normally reveal MQTT commands: decryption needs the relevant session secrets, as described in [Wireshark's TLS guide](https://wiki.wireshark.org/TLS). Browser session secrets would not cover a board's separate connection. TLS 1.3 also uses the outer `17 03 03` header for encrypted handshake and other content, so that signature does not identify the application protocol; see [RFC 8446](https://www.rfc-editor.org/rfc/rfc8446). Replaying encrypted TCP/TLS records is not equivalent to copying an infrared code.
 
-## Next useful experiment
+## Next protocol-discovery steps
+
+The next gate is a stock-firmware command and status protocol with a usable local authentication method. Further passive captures may identify the service and transport, but cannot by themselves turn encrypted records into reusable fan commands.
+
+1. Ask the manufacturer for a supported offline/LAN interface on the installed SPCM NARAH board and firmware: HTTP/TCP/UDP endpoints or MQTT topics, authentication, speed/mode writes, status readback and whether the board supports a privately configured broker. Broker configuration is only a question for the vendor; no redirection has been attempted.
+2. Inspect the native app's bundled code and any vendor-supplied firmware documentation or image for requests to a board's LAN address. The web client's registration path alone does not establish a control interface. Native-app inspection is a proposed next step, not a completed audit; it may reveal only the same cloud API.
+3. Establish fresh local status readback before testing one documented or independently verified local speed command. Verify the reported result and physical response before proceeding, then assess offline operation separately.
+
+A concise request for the manufacturer:
+
+> Does the stock SPCM NARAH Wi-Fi firmware support fan control and status readback over the local network without Connectair internet access? Please provide the supported protocol, endpoints or MQTT topics/payloads, authentication, board/firmware revisions and any private-broker configuration. If only RS-485 Modbus is supported, please supply the unit-address setup, complete serial framing, active mode/speed write commands and status registers, and explain whether SW3 permits simultaneous Wi-Fi control.
+
+No supported stock Wi-Fi control interface has yet been established. An app audit or vendor response may resolve that gap; neither is a guarantee that the existing firmware implements offline control.
+
+## Traffic-correlation experiment
 
 The AP Debug route now works for private, passive captures. [UniFi's debug console](https://help.ui.com/hc/en-us/articles/204909374-Connecting-to-UniFi-with-Debug-Tools-SSH) and [traffic-capture guidance](https://help.ui.com/hc/en-us/articles/204959834-Advanced-Logging-Information) describe the available surfaces. A complete private PCAP with TCP reassembly would provide stronger protocol evidence than terminal summaries and truncated samples.
 
@@ -68,5 +82,7 @@ A local implementation needs a verified command format, authentication, state re
 ## Modbus and firmware alternatives
 
 The [NARAH unit manual](https://statics.solerpalau.com/media/import/documentation/Ins_NARAH_160_RT.pdf#page=50) documents RS-485 Modbus on **D0/D1/COM**, with SW3 selecting Modbus or Wi-Fi. Direct use normally requires an RS-485 adapter or gateway. It does not establish a stock Wi-Fi-to-Modbus bridge or simultaneous operation. The board's J7 connection alone does not establish a compatible UART protocol or replacement-firmware route. These alternatives do not yet satisfy the no-additional-hardware goal.
+
+The English [register tables, pp65–67](https://statics.solerpalau.com/media/import/documentation/Ins_NARAH_160_RT.pdf#page=65), specify default 9600 baud/even parity, configurable airflow setpoints and read-only current mode/speed. They do not clearly specify the active mode/speed write command, unit-address setup or complete serial framing. Request those details before implementing a Modbus controller; adjustable airflow levels alone do not establish how to select the active speed.
 
 No wiring, switch changes, resets, firmware flashing or broker redirection were performed.
