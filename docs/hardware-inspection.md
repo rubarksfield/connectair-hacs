@@ -50,3 +50,15 @@ Entering the ROM downloader is a separate maintenance step. It interrupts normal
 [Flash encryption and UART-download protections](https://docs.espressif.com/projects/esp-idf/en/stable/esp32/security/flash-encryption.html) can prevent useful plaintext recovery. Their state on this unit is unknown. Stop at an unsupported or protected read rather than changing security settings. If readable, retain two matching copies with hashes and inspect them offline for local HTTP handlers, state/command schemas and authentication. Dumps can contain Wi-Fi and device credentials; keep them in ignored, owner-only private storage and publish only reviewed, non-sensitive findings.
 
 The photographs identify the hardware and a candidate access area. They do not prove a programming header, a readable firmware image or operating LAN control.
+
+## Independent investigation sequence
+
+The recommended next sequence is connector/voltage/isolation identification, receive-only serial observation, then a conditional copy of the existing firmware for offline analysis. This uses temporary investigation equipment; it does not establish that extra hardware will be unnecessary in a completed integration. A recovered image is compiled software, not the manufacturer's original source code.
+
+[Secure boot](https://docs.espressif.com/projects/esp-idf/en/stable/esp32/security/secure-boot-v2.html) checks whether software is authorized to execute. Flash encryption and downloader restrictions separately affect whether a useful firmware copy can be recovered. These protections have not been read on either unit; secure boot alone must not be treated as proof that every flash read is impossible.
+
+An alternative is passive observation of the link between the Wi-Fi module and the main fan controller while changing one setting through the working official app. A [logic analyser](https://www.saleae.com/support/getting-started/setup) can capture and decode supported digital protocols once the electrical interface has been established. The link's protocol, voltage, pinout and isolation are unknown; J1/J2/J7 must not be assumed to provide UART, I2C or Modbus. Any capture would start with passive observation rather than sending guessed commands.
+
+That internal link may expose controller commands after network encryption has ended, but this is an untested hypothesis. Decoding it could support a replacement controller or bridge; it would not automatically add a network command handler to the stock Wi-Fi firmware. A usable stock LAN handler may be absent. The documented [RS-485 Modbus alternative](lan-control.md#modbus-and-firmware-alternatives) remains a separate route requiring permanent interface hardware and unresolved control details.
+
+No serial connection, firmware read or internal-bus recording has been performed. These are investigation options, not verified control methods.
