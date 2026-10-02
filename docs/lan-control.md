@@ -55,6 +55,18 @@ The board probably uses **MQTT over TLS**. [Espressif's ESP-MQTT documentation](
 
 Capturing encrypted traffic can identify connection destinations and timing. It does not normally reveal MQTT commands: decryption needs the relevant session secrets, as described in [Wireshark's TLS guide](https://wiki.wireshark.org/TLS). Browser session secrets would not cover a board's separate connection. TLS 1.3 also uses the outer `17 03 03` header for encrypted handshake and other content, so that signature does not identify the application protocol; see [RFC 8446](https://www.rfc-editor.org/rfc/rfc8446). Replaying encrypted TCP/TLS records is not equivalent to copying an infrared code.
 
+## Can the encrypted messages be decrypted?
+
+The later retained board handshakes include ServerHello selections of TLS 1.2 with `TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256` on port 8883 and its AES-256 counterpart (`0xc030`) on port 443. These are observations from specific handshake attempts, not proof that every connection uses those settings or that the recorded handshakes completed authentication. Both suites use ephemeral key exchange. The [Wireshark TLS guide](https://wiki.wireshark.org/TLS) explains why an ordinary server private key cannot retrospectively decrypt ECDHE sessions. The Wi-Fi password, S&P account tokens and device authentication credentials are not interchangeable with the required TLS session secrets.
+
+There are three possible observation routes, none established for the stock board:
+
+- **Matching session-secret logs:** an endpoint could export the secrets needed to decrypt its captured connection. No stock-board export/debug interface has been identified. A browser's key log covers that browser's own connections, not the fan's separate cloud session.
+- **A trusted inspection proxy for new connections:** [mitmproxy documents](https://docs.mitmproxy.org/stable/concepts/certificates/) that the client must accept the proxy's certificate authority. Changing the fan's route or DNS does not itself solve certificate trust. The board's trust implementation is unknown; [Espressif's documented verification options](https://docs.espressif.com/projects/esp-idf/en/stable/esp32/api-reference/protocols/esp_tls.html#tls-server-verification) are SDK capabilities, not evidence of the installed S&P settings. No remote trust-store interface has been established, and a rejected handshake alone would not prove certificate pinning. A proxy would observe future connections, not unlock the existing capture files.
+- **Plaintext observation before encryption or after decryption:** application instrumentation or a verified internal/debug connection could expose messages without decrypting a PCAP. App-side observation covers app-to-cloud requests; the ordinary requests are already traced and replicated by the integration. It does not reveal the separate cloud-to-board message or prove a LAN handler.
+
+A readable firmware copy could reveal handlers, trust configuration and credentials, but does not automatically supply the ephemeral secrets for past sessions. No useful session secrets have been recovered and no network-only decryption method has been demonstrated. No proxy, root certificate, route/DNS change or TLS-verification change was applied during this assessment.
+
 ## Azure device-service evidence
 
 A separate unauthenticated TLS handshake to the internet peer observed in the retained AP capture presented a Microsoft Azure device-service certificate, including `*.azure-devices.net`. Certificate-chain verification was enabled and passed; no hostname verification, SNI or application data was supplied. This was the investigator's connection, not a captured board handshake, and it disclosed no device credentials.
