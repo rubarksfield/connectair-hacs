@@ -33,6 +33,18 @@ The current S&P product links lead to Media Center. Its inspected catalogue stil
 
 There are public [Espressif Azure integration sources](https://github.com/espressif/esp-azure) and [Microsoft FreeRTOS Device Update sources](https://github.com/Azure/azure-iot-middleware-freertos/blob/4502a309bf1c300507684cd4a341c6baf6eca698/docs/how_to_use_adu_client.md). Microsoft's documented implementation delivers signed manifests and image links through device-twin update requests. These are reference implementations: the stock board's observed cloud service family does not establish that it uses this updater or its schema. No sample image is a verified replacement for S&P firmware.
 
+## Can UniFi identify the original download?
+
+Possibly, if the gateway retained traffic records from the update. UniFi's [Traffic Flows documentation](https://help.ui.com/hc/en-us/articles/32201256219799-Traffic-Flows-and-Traffic-Logging-in-UniFi-Network) describes completed sessions with source/destination ports, transfer sizes and durations. Its history requires supported gateway software and storage; retention depends on the number of records, rather than a guaranteed number of days. Hardware support alone does not establish that records exist for an earlier update.
+
+The useful search is restricted to the owned fan's identity and its first connection/update window. A client `first_seen` timestamp helps choose that window but is not an update timestamp. A download-sized connection to a destination supplies a candidate server, not proof of a firmware transfer or a compatible image.
+
+Ordinary [system logs](https://help.ui.com/hc/en-us/articles/33349041044119-UniFi-System-Logs-SIEM-Integration) record events such as Wi-Fi connections and device/admin activity. A UniFi-device update event does not establish a third-party fan's firmware update. Empty legacy event or per-client traffic-summary responses also do not establish that the newer Traffic Flows history is empty.
+
+HTTPS normally hides the requested path, query and downloaded contents from ordinary gateway records. A retained flow may identify the destination without exposing the firmware URL. Logging enabled later cannot recover packets or records that were never retained. This investigation inspects retained records without changing logging, TLS inspection or other network settings.
+
+The live read-only check found retained Wi-Fi connection/reconnection events for both owned fans around initial installation. Those records give connection times and session data totals, but no download destination or firmware filename. The gateway currently selects **Blocked Traffic Only**, with **All Flows** disabled in the traffic-history view; NetFlow export is off and activity logs are stored internally. That current configuration does not prove which logging mode was selected at installation. No successful update-download record, server address or firmware URL was recovered from the inspected history.
+
 ## What would unlock the next step
 
 The useful artifact is an actual model-matched S&P/OEM image or a source-backed manifest/download reference. That could be inspected on a computer before any installation. Standard ESP32 hardware and public SDKs do not identify the appliance's installed program.
