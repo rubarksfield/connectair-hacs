@@ -15,6 +15,7 @@ from .models import (
     AuthenticationError,
     CommandError,
     Device,
+    DeviceMeasurements,
     DeviceOfflineError,
     DeviceState,
     ProtocolError,
@@ -165,8 +166,8 @@ class ConnectairClient:
         )
         return parse_dashboard(device, dashboard)
 
-    async def async_get_humidity(self, device_id: str) -> float | None:
-        """Read cloud-reported humidity; comfort status is not a validity flag."""
+    async def async_get_measurements(self, device_id: str) -> DeviceMeasurements | None:
+        """Read validated ambient readings from one state response."""
         requested_id = str(device_id)
         path_id = quote(requested_id, safe="")
         result = await self._request("GET", f"/device/{path_id}/state")
@@ -192,11 +193,31 @@ class ConnectairClient:
         if (
             isinstance(humidity, bool)
             or not isinstance(humidity, (int, float))
-            or not 0 <= humidity <= 100
             or not math.isfinite(humidity)
+            or not 0 <= humidity <= 100
         ):
+            humidity = None
+        else:
+            humidity = float(humidity)
+
+        temperature = reading.get("ambientTemperature")
+        if (
+            isinstance(temperature, bool)
+            or not isinstance(temperature, (int, float))
+            or not math.isfinite(temperature)
+        ):
+            temperature = None
+        else:
+            temperature = float(temperature)
+
+        if humidity is None and temperature is None:
             return None
-        return float(humidity)
+        return DeviceMeasurements(humidity=humidity, temperature=temperature)
+
+    async def async_get_humidity(self, device_id: str) -> float | None:
+        """Backward-compatible humidity-only view of the measurements."""
+        measurements = await self.async_get_measurements(device_id)
+        return measurements.humidity if measurements is not None else None
 
     async def _send(self, state: DeviceState, group: dict[str, Any], register: str) -> None:
         payload = build_command(state, group, register)

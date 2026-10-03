@@ -17,7 +17,14 @@ from homeassistant.helpers.update_coordinator import (
 )
 
 from .const import DOMAIN, UPDATE_INTERVAL
-from .models import AuthenticationError, ConnectairError, Device, DeviceState, TransportError
+from .models import (
+    AuthenticationError,
+    ConnectairError,
+    Device,
+    DeviceMeasurements,
+    DeviceState,
+    TransportError,
+)
 
 if TYPE_CHECKING:
     from . import ConnectairConfigEntry
@@ -85,8 +92,8 @@ class ConnectairCoordinator(DataUpdateCoordinator[dict[str, DeviceState | None]]
         self.async_set_updated_data({**self.data, device_id: state})
 
 
-class ConnectairHumidityCoordinator(DataUpdateCoordinator[dict[str, float | None]]):
-    """Read optional RH independently of fan polling and command confirmation."""
+class ConnectairHumidityCoordinator(DataUpdateCoordinator[dict[str, DeviceMeasurements | None]]):
+    """Read optional ambient measurements independently of fan polling."""
 
     def __init__(
         self, hass: HomeAssistant, entry: ConnectairConfigEntry, parent: ConnectairCoordinator
@@ -139,15 +146,15 @@ class ConnectairHumidityCoordinator(DataUpdateCoordinator[dict[str, float | None
         }
         self.async_update_listeners()
 
-    async def _async_update_data(self) -> dict[str, float | None]:
+    async def _async_update_data(self) -> dict[str, DeviceMeasurements | None]:
         devices = tuple(self.parent.devices.values())
         versions = self._availability_versions.copy()
 
-        async def fetch(device: Device) -> float | None:
+        async def fetch(device: Device) -> DeviceMeasurements | None:
             if not self._parent_online.get(device.device_id, False):
                 return None
             try:
-                return await self.parent.client.async_get_humidity(device.device_id)
+                return await self.parent.client.async_get_measurements(device.device_id)
             except AuthenticationError:
                 raise ConfigEntryAuthFailed("Connectair login expired") from None
             except ConnectairError:

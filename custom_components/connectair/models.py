@@ -78,6 +78,14 @@ class DeviceState:
     controls: Controls
 
 
+@dataclass(frozen=True, slots=True)
+class DeviceMeasurements:
+    """Optional ambient readings from one Connectair state response."""
+
+    humidity: float | None
+    temperature: float | None
+
+
 SPEED_REGISTERS = {0: "Parado", 1: "Speed1de4", 2: "Speed2de4", 3: "Speed3de4", 4: "Speed4de4"}
 _SPEED_CLASSES = {
     "Parado": 47,

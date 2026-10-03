@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from homeassistant.components.sensor import SensorDeviceClass, SensorEntity, SensorStateClass
-from homeassistant.const import PERCENTAGE, UnitOfTime
+from homeassistant.const import PERCENTAGE, UnitOfTemperature, UnitOfTime
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity import EntityCategory
@@ -41,6 +41,7 @@ async def async_setup_entry(
         lambda c, d: [
             *(ConnectairSensor(c, d, key) for key in SENSOR_NAMES),
             ConnectairHumiditySensor(c.humidity_coordinator, d),
+            ConnectairTemperatureSensor(c.humidity_coordinator, d),
         ],
         require_supported_state=True,
     )
@@ -93,7 +94,8 @@ class ConnectairHumiditySensor(CoordinatorEntity[ConnectairHumidityCoordinator],
 
     @property
     def native_value(self) -> float | None:
-        return self.coordinator.data.get(self.device_id)
+        measurements = self.coordinator.data.get(self.device_id)
+        return measurements.humidity if measurements is not None else None
 
     @property
     def available(self) -> bool:
@@ -106,3 +108,22 @@ class ConnectairHumiditySensor(CoordinatorEntity[ConnectairHumidityCoordinator],
             and device.online
             and self.native_value is not None
         )
+
+
+class ConnectairTemperatureSensor(ConnectairHumiditySensor):
+    """Expose the unit's reported ambient temperature in Celsius."""
+
+    _attr_name = "Temperature"
+    _attr_unique_id = None
+    _attr_device_class = SensorDeviceClass.TEMPERATURE
+    _attr_native_unit_of_measurement = UnitOfTemperature.CELSIUS
+    _attr_icon = "mdi:thermometer"
+
+    def __init__(self, coordinator: ConnectairHumidityCoordinator, device_id: str) -> None:
+        super().__init__(coordinator, device_id)
+        self._attr_unique_id = f"{device_id}_temperature"
+
+    @property
+    def native_value(self) -> float | None:
+        measurements = self.coordinator.data.get(self.device_id)
+        return measurements.temperature if measurements is not None else None

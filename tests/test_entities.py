@@ -313,6 +313,27 @@ async def test_native_humidity_sensor_uses_percentage_measurement_metadata_and_s
     assert hass.states.get("sensor.unit_a_humidity").state == "unavailable"
 
 
+async def test_native_temperature_sensor_uses_celsius_metadata_and_shared_measurement_poll(
+    hass, account_entry, enable_custom_integrations
+):
+    client = PollClient()
+    await setup_measurement_entry(hass, account_entry, client)
+    state = hass.states.get("sensor.unit_a_temperature")
+    assert state is not None
+    assert state.state == "24.0"
+    assert state.attributes["device_class"] == "temperature"
+    assert state.attributes["unit_of_measurement"] == "°C"
+    assert state.attributes["state_class"] == "measurement"
+    entry = er.async_get(hass).async_get("sensor.unit_a_temperature")
+    assert entry.unique_id == "unit-a_temperature"
+    assert client.humidity_requests == ["unit-a", "unit-b"]
+    client.temperature_values["unit-a"] = None
+    await account_entry.runtime_data.humidity_coordinator.async_refresh()
+    await hass.async_block_till_done()
+    assert hass.states.get("sensor.unit_a_temperature").state == "unavailable"
+    assert hass.states.get("sensor.unit_a_humidity").state == "42.5"
+
+
 async def test_initial_humidity_failure_does_not_prevent_fan_setup(
     hass, account_entry, enable_custom_integrations
 ):
@@ -368,9 +389,11 @@ async def test_new_supported_device_gets_humidity_sensor_on_later_poll(
     await setup_measurement_entry(hass, account_entry, client)
     client.states["unit-c"] = make_state("unit-c", speed=2)
     client.humidity_values["unit-c"] = 56.0
+    client.temperature_values["unit-c"] = 22.1
     await account_entry.runtime_data.async_refresh()
     await hass.async_block_till_done()
     await account_entry.runtime_data.humidity_coordinator.async_refresh()
     await hass.async_block_till_done()
     assert hass.states.get("sensor.unit_c_humidity").state == "56.0"
+    assert hass.states.get("sensor.unit_c_temperature").state == "22.1"
     assert hass.states.get("fan.unit_c").attributes["percentage"] == 50

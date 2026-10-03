@@ -165,7 +165,9 @@ async def test_humidity_reads_owned_online_state_without_unit_conversion(
 
     with aioresponses() as responses:
         responses.get(f"{BASE}/device/demo-unit/state", callback=state_response)
-        assert await client(session).async_get_humidity("demo-unit") == float(humidity)
+        measurements = await client(session).async_get_measurements("demo-unit")
+        assert measurements.humidity == float(humidity)
+        assert measurements.temperature == 24.0
 
 
 @pytest.mark.parametrize(
@@ -191,6 +193,35 @@ async def test_humidity_absent_reading_remains_unknown(session, reading):
             payload={"status": {"deviceId": "demo-unit", "isOnline": True}, "reading": reading},
         )
         assert await client(session).async_get_humidity("demo-unit") is None
+
+
+@pytest.mark.parametrize("temperature", [None, True, False, "24", float("nan"), float("inf"), []])
+async def test_invalid_temperature_does_not_hide_valid_humidity(session, temperature):
+    with aioresponses() as responses:
+        responses.get(
+            f"{BASE}/device/demo-unit/state",
+            payload={
+                "status": {"deviceId": "demo-unit", "isOnline": True},
+                "reading": {"ambientHumidity": 50, "ambientTemperature": temperature},
+            },
+        )
+        measurements = await client(session).async_get_measurements("demo-unit")
+    assert measurements.humidity == 50.0
+    assert measurements.temperature is None
+
+
+async def test_temperature_only_measurement_is_retained(session):
+    with aioresponses() as responses:
+        responses.get(
+            f"{BASE}/device/demo-unit/state",
+            payload={
+                "status": {"deviceId": "demo-unit", "isOnline": True},
+                "reading": {"ambientTemperature": 23.25},
+            },
+        )
+        measurements = await client(session).async_get_measurements("demo-unit")
+    assert measurements.humidity is None
+    assert measurements.temperature == 23.25
 
 
 async def test_humidity_offline_response_does_not_publish_cached_number(session):

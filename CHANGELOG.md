@@ -4,6 +4,8 @@ User-facing changes, fixes and implementation findings are recorded here. Add ch
 
 ## [Unreleased]
 
+### Added
+
 ### Documentation and findings
 
 - Recorded the single bounded inspection-proxy attempt: AP packet translation occurred, but no completed board connection reached the proxy, so certificate trust remains untested and no plaintext commands were recovered. Documented independent rollback tests, older firewall-tool setup failures, restored routing and a reported Home Assistant 50% then 25% recovery test with delayed confirmation. Captures and identities remain private; integration runtime and LAN-control capability are unchanged. See the [proxy findings](docs/lan-control.md#bounded-inspection-proxy-attempt).
@@ -46,6 +48,14 @@ User-facing changes, fixes and implementation findings are recorded here. Add ch
 - Corrected the native client's address selection: the protected client path retains a populated address or defaults to factory HTTPS; the unprotected path uses factory HTTP. Constructor/callback tracing links the local register controls to a separately created Bathroom/MicroSPCM flow; normal owned NARAH app records follow the cloud path, and no NARAH local compatibility gate was proved. Traced a legacy read-only identity GET and tested it once per online board; both returned HTTP 404, and both again refused HTTPS. No local status or command was established, and no compiled credentials, pairing-key requests or fan writes were used. Recorded the manufacturer's automatic overnight updater and a bounded public-source review that identified no obtainable firmware image. Raw evidence and the uninterpreted firmware field remain private. See the [deeper investigation](docs/lan-control.md#deeper-identity-and-firmware-investigation). This documentation-only update does not change runtime 0.1.2.
 - Clarified the measurement-source evidence as fresh reads from both owned units, without implying two validation requests per unit.
 - Recorded live HACS installation of version 0.1.2 and the Home Assistant Core restart. Both native humidity entities report changing percentages, and recorder history contains numeric samples for both. One initially unavailable reading recovered on an ordinary scheduled poll without a runtime fix; its cause remains unestablished. Added and read back four humidity cards on the ventilation dashboard and two live figures on the home dashboard while preserving existing content. The ventilation readings and both history charts were visually verified in the native desktop app; the desktop view became unavailable before home-card rendering could be confirmed. Both fans continued to report 25%, with enabled, idle schedules. The 24-hour charts begin with newly recorded samples; long-term statistics, phone rendering and physical calibration were not verified. Clarified earlier observations that predated humidity support. This is a documentation-only record; local/offline control remains unproven.
+
+## [0.1.3] — 2026-10-03
+
+### Added
+
+- Added validated ambient temperature sensors in °C alongside humidity, reusing the same 30-second `/state` request. A missing or invalid reading remains unavailable without suppressing the other measurement.
+- Added live temperature readouts and four supported speed buttons per fan to the Be Home dashboard, with reported speed/mode and connection indicators. Added 24-hour temperature charts to the Ventilation dashboard; existing speed and humidity charts remain.
+- Validation: 230 tests passed against Home Assistant 2026.9.2. Ruff lint/format and whitespace checks passed.
 
 ## [0.1.2] — 2026-10-01
 
@@ -117,7 +127,8 @@ User-facing changes, fixes and implementation findings are recorded here. Add ch
 - Boost, automatic-mode selection, unsupported models and local/offline control are not implemented.
 - Release validation: 153 tests passed against genuine Home Assistant 2026.9.2; Ruff lint/format and release CI passed. Live enrollment, Home Assistant control and restart persistence were verified separately.
 
-[Unreleased]: https://github.com/rubarksfield/connectair-hacs/compare/v0.1.2...main
+[Unreleased]: https://github.com/rubarksfield/connectair-hacs/compare/v0.1.3...main
+[0.1.3]: https://github.com/rubarksfield/connectair-hacs/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/rubarksfield/connectair-hacs/releases/tag/v0.1.2
 [0.1.1]: https://github.com/rubarksfield/connectair-hacs/releases/tag/v0.1.1
 [0.1.0]: https://github.com/rubarksfield/connectair-hacs/releases/tag/v0.1.0

@@ -12,6 +12,7 @@ from custom_components.connectair.coordinator import ConnectairCoordinator
 from custom_components.connectair.models import (
     AuthenticationError,
     CommandError,
+    DeviceMeasurements,
     ProtocolError,
     TransportError,
     UnsupportedDeviceError,
@@ -40,6 +41,7 @@ class PollClient:
         self.failures = {}
         self.command_error = None
         self.humidity_values = {"unit-a": 42.5, "unit-b": 61.0}
+        self.temperature_values = {"unit-a": 24.0, "unit-b": 20.5}
         self.humidity_failures = {}
         self.humidity_requests = []
 
@@ -59,11 +61,15 @@ class PollClient:
         )
         return self.states[device_id]
 
-    async def async_get_humidity(self, device_id):
+    async def async_get_measurements(self, device_id):
         self.humidity_requests.append(device_id)
         if device_id in self.humidity_failures:
             raise self.humidity_failures[device_id]
-        return self.humidity_values.get(device_id)
+        humidity = self.humidity_values.get(device_id)
+        temperature = self.temperature_values.get(device_id)
+        if humidity is None and temperature is None:
+            return None
+        return DeviceMeasurements(humidity=humidity, temperature=temperature)
 
 
 async def test_one_device_transport_failure_keeps_other_device_available(hass, account_entry):
@@ -176,10 +182,12 @@ async def test_humidity_failure_clears_only_that_measurement(hass, account_entry
     await fan.async_refresh()
     humidity = fan.humidity_coordinator
     await humidity.async_refresh()
-    assert humidity.data == {"unit-a": 42.5, "unit-b": 61.0}
+    assert humidity.data["unit-a"].humidity == 42.5
+    assert humidity.data["unit-b"].humidity == 61.0
     client.humidity_failures["unit-a"] = error
     await humidity.async_refresh()
-    assert humidity.data == {"unit-a": None, "unit-b": 61.0}
+    assert humidity.data["unit-a"] is None
+    assert humidity.data["unit-b"].humidity == 61.0
     assert fan.last_update_success
     assert fan.data["unit-a"].speed == 4
     await fan.async_set_speed("unit-a", 1)
@@ -191,15 +199,15 @@ async def test_pending_humidity_read_does_not_delay_fan_poll_or_command(hass, ac
     fan = ConnectairCoordinator(hass, account_entry, client)
     await fan.async_refresh()
     started, finish = asyncio.Event(), asyncio.Event()
-    read_humidity = client.async_get_humidity
+    read_measurements = client.async_get_measurements
 
-    async def delayed_humidity(device_id):
+    async def delayed_measurements(device_id):
         if device_id == "unit-a":
             started.set()
             await finish.wait()
-        return await read_humidity(device_id)
+        return await read_measurements(device_id)
 
-    client.async_get_humidity = delayed_humidity
+    client.async_get_measurements = delayed_measurements
     poll = asyncio.create_task(fan.humidity_coordinator.async_refresh())
     await started.wait()
     try:
@@ -249,13 +257,13 @@ async def test_late_humidity_response_cannot_restore_offline_measurement(hass, a
     await humidity.async_refresh()
     started, finish = asyncio.Event(), asyncio.Event()
 
-    async def delayed_humidity(device_id):
+    async def delayed_measurements(device_id):
         if device_id == "unit-a":
             started.set()
             await finish.wait()
-        return 42.5
+        return DeviceMeasurements(humidity=42.5, temperature=24.0)
 
-    client.async_get_humidity = delayed_humidity
+    client.async_get_measurements = delayed_measurements
     poll = asyncio.create_task(humidity.async_refresh())
     await started.wait()
     try:
@@ -308,13 +316,13 @@ async def test_delayed_humidity_cannot_restore_reading_after_disconnect_and_reco
     await humidity.async_refresh()
     started, finish = asyncio.Event(), asyncio.Event()
 
-    async def delayed_humidity(device_id):
+    async def delayed_measurements(device_id):
         if device_id == "unit-a":
             started.set()
             await finish.wait()
-        return 42.5
+        return DeviceMeasurements(humidity=42.5, temperature=24.0)
 
-    client.async_get_humidity = delayed_humidity
+    client.async_get_measurements = delayed_measurements
     poll = asyncio.create_task(humidity.async_refresh())
     await started.wait()
     try:
@@ -330,7 +338,7 @@ async def test_delayed_humidity_cannot_restore_reading_after_disconnect_and_reco
         await poll
     assert humidity.data["unit-a"] is None
     # Another fan's uninterrupted reading is not discarded by the transition.
-    assert humidity.data["unit-b"] == 42.5
+    assert humidity.data["unit-b"].humidity == 42.5
 
 
 async def test_fresh_detail_offline_invalidates_humidity_even_when_list_says_online(
@@ -372,4 +380,4 @@ async def test_humidity_skips_never_supported_device_but_keeps_validated_transie
     client.humidity_requests.clear()
     await humidity.async_refresh()
     assert client.humidity_requests == ["unit-a"]
-    assert humidity.data["unit-a"] == 42.5
+    assert humidity.data["unit-a"].humidity == 42.5
