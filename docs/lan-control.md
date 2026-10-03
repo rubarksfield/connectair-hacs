@@ -4,6 +4,8 @@ Reviewed 3 October 2026 for NARAH 160 RT units with existing SPCM NARAH Wi-Fi bo
 
 **Local fan control remains unproven.** The installed integration works through the Connectair cloud without additional hardware. The boards expose a local registration page, but no verified LAN speed-control endpoint has been found.
 
+Community contributions are welcome. The practical target is a reproducible, board-local status read followed by a speed command whose reported state can be checked, with the stock board firmware and safe rollback preserved. Redact credentials, registration values, account/device identifiers, household addresses, raw captures and private configuration from public reports. The documented RS-485 Modbus connection is a distinct wired option and does not establish a Wi-Fi/LAN bridge.
+
 ## Verified observations
 
 A bounded 22-port TCP scan of two boards found port **80** open; the other 21 tested ports, including **443, 502, 1883 and 8883**, refused connections. This was neither an all-port scan nor a UDP scan, and says nothing about outbound connections.

@@ -53,6 +53,12 @@ data:
 
 Replace the example entity ID with the actual discovered entity. The integration preserves unrelated settings in S&P's coupled control payload. An offline unit, unknown operating mode or unsupported control response raises an error instead of inventing a successful state.
 
+## Help wanted: local control
+
+The integration currently depends on Connectair's cloud service. No reliable board-local fan command, status read or offline-control path has been demonstrated. The [LAN investigation](docs/lan-control.md) records tested listeners, encrypted traffic and the separate documented Modbus route; an Espressif chip alone does not imply ESPHome or another standard control API.
+
+Contributions are welcome from people familiar with S&P NARAH, ESP32 networking, TLS or Modbus. A useful issue or pull request should provide reproducible, redacted evidence for a local status read and, ideally, a speed command with reported-state confirmation. Please do not post credentials, sign-in callback URLs, registration keys, device/account identifiers, household IP or MAC addresses, raw packet captures, HAR files or private Home Assistant configuration. Keep firmware changes and hardware wiring out of scope unless their risks and rollback are documented.
+
 ## Troubleshooting
 
 - **Login expired:** use the reauthentication prompt in Devices & services.
