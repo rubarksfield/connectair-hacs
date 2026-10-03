@@ -143,6 +143,12 @@ Only finite numeric values from 0 through 100 are accepted, with no scaling. Boo
 
 The cloud response provides no hardware measurement timestamp. Poll receipt time establishes when Home Assistant obtained a response, not the age or calibration of the device's sample. Physical humidity calibration remains unverified, and the sensor still requires the Connectair cloud.
 
+## Cloud-reported temperature
+
+The same `/device/{id}/state` response contains `reading.ambientTemperature`; the inspected app presents that value in degrees Celsius. Version **0.1.3** adds one native Temperature sensor per supported unit, reusing the independent 30-second measurement poll rather than issuing another request. Temperature is validated independently from humidity, so one missing or invalid field does not suppress the other. The cloud response has no hardware sample timestamp, and physical temperature calibration remains unverified.
+
+The Ventilation dashboard includes a 24-hour temperature history graph per unit alongside the existing fan-speed and humidity graphs. The Be Home dashboard shows each live temperature figure, four explicit speed actions, and the current reported speed, operating mode and connection. These values are cloud-reported. The dashboard controls were saved and read back; the optional Home Assistant screenshot renderer was disabled during this update, so the new card appearance was not visually checked. Neither unit currently advertises the Connectair Stop control, so its existing Turn off card remains disabled; the four speed actions do not include 0%.
+
 Add the actual discovered humidity entity to a Tile card for the live figure. A native [history graph](https://www.home-assistant.io/dashboards/history-graph/) can show the last 24 hours; data begins when the sensor is installed, with no backfilled historical readings. For example, use the dashboard editor/API with the following generic card shape, replacing the placeholder entity:
 
 ```yaml
