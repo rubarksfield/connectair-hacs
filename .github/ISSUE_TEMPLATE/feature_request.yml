@@ -1,0 +1,26 @@
+name: Suggest an improvement
+description: Got a bright idea for a better breeze?
+title: "[Idea]: "
+body:
+  - type: markdown
+    attributes:
+      value: Share the idea and the problem it solves. Please leave credentials, sign-in addresses, device IDs and household network details out of your examples.
+  - type: textarea
+    id: problem
+    attributes:
+      label: What would you like to make easier?
+      description: Tell us about the task or limitation you have run into.
+    validations:
+      required: true
+  - type: textarea
+    id: suggestion
+    attributes:
+      label: Your idea
+      description: How would you like Connectair to help?
+    validations:
+      required: true
+  - type: input
+    id: model
+    attributes:
+      label: Relevant model, if any
+      description: The model name only; no serial numbers or device IDs.

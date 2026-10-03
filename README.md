@@ -1,15 +1,28 @@
-# S&P Connectair for Home Assistant
+# 🌬️ S&P Connectair for Home Assistant
 
-Control S&P NARAH ventilation through its existing Connectair Wi-Fi connection. No additional Modbus adapter is required.
+**A little breeze. A lot more control.**
 
-**Version 0.1.3:** adds device-reported ambient temperature in °C alongside humidity, using one independent measurement poll and native Home Assistant history support. Renewable sign-in, independent device control and live enrollment were verified in earlier releases. Automated tests run against Home Assistant 2026.9.2.
+Bring your S&P NARAH ventilation into Home Assistant: choose a speed, follow temperature and humidity, keep an eye on filters, and let your automations handle the routine. It works through your existing Connectair Wi-Fi connection.
 
-[![Add to HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=rubarksfield&repository=connectair-hacs&category=integration)
+[![HACS custom integration](https://img.shields.io/badge/HACS-Custom-41BDF5?logo=homeassistant&logoColor=white)](https://www.hacs.xyz/docs/faq/custom_repositories/)
+[![Latest release](https://img.shields.io/github/v/release/rubarksfield/home-assistant-connectair)](https://github.com/rubarksfield/home-assistant-connectair/releases/latest)
+[![Tests](https://github.com/rubarksfield/home-assistant-connectair/actions/workflows/tests.yml/badge.svg)](https://github.com/rubarksfield/home-assistant-connectair/actions/workflows/tests.yml)
+[![HACS and hassfest](https://github.com/rubarksfield/home-assistant-connectair/actions/workflows/validate.yml/badge.svg)](https://github.com/rubarksfield/home-assistant-connectair/actions/workflows/validate.yml)
+[![Secret scan](https://github.com/rubarksfield/home-assistant-connectair/actions/workflows/secrets.yml/badge.svg)](https://github.com/rubarksfield/home-assistant-connectair/actions/workflows/secrets.yml)
+
+[![Add to HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=rubarksfield&repository=home-assistant-connectair&category=integration)
 [![Add integration](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=connectair)
 
-This is an independent community integration, unaffiliated with S&P. It uses the Connectair cloud service; an internet connection and a working S&P account are required. Local, offline control is not implemented. See the [LAN control investigation](docs/lan-control.md) for verified findings and the next capture step.
+| Before you get breezy | What you need |
+| --- | --- |
+| Home Assistant | **2026.9.2 or newer**, with HACS installed |
+| Ventilation | **S&P NARAH 160 RT**, using supported **P0024_R000** controls |
+| Account and connection | Your existing S&P Connectair account and internet access |
+| Installation | HACS **custom repository**, category **Integration** |
 
-Changes and implementation findings are recorded in the [changelog](CHANGELOG.md).
+**Version 0.1.3** adds ambient temperature in °C alongside humidity. The integration provides normal Home Assistant entities for your dashboards, history and automations. See the [changelog](CHANGELOG.md) for release details.
+
+This independent community integration is unaffiliated with S&P. It uses the **Connectair cloud**; local, offline control is not implemented. Other models need validation before they can be supported.
 
 ## Features
 
@@ -25,13 +38,17 @@ Initially supports NARAH 160 RT/P0024_R000 controls. Other models require explic
 
 ## Install
 
+Five steps to a smarter breeze.
+
 Requires Home Assistant **2026.9.2 or newer** and HACS.
 
-1. Use **Add to HACS** above, or add `https://github.com/rubarksfield/connectair-hacs` under HACS → Custom repositories, category **Integration**.
+1. Use **Add to HACS** above. For a manual install, open HACS → ⋮ → **Custom repositories**, add `https://github.com/rubarksfield/home-assistant-connectair`, and choose **Integration**.
 2. Download **S&P Connectair** and restart Home Assistant.
 3. Open Settings → Devices & services → Add integration → **S&P Connectair**.
 4. Follow the sign-in link in a new tab. Sign in to your existing S&P account and allow renewable access. Copy the complete returned Connectair address containing the `code=` and `state=` query parameters, and paste it into the integration form. If S&P shows an **Auth Error** page, open your browser history and copy the preceding Connectair address containing `code=` and `state=`. The error-page address will not work. Keep the callback address private: it contains a one-time login code.
-5. The integration verifies token renewal and your account before adding devices. Assign each device to its room.
+5. The integration verifies your account and token renewal, then discovers your supported units. Assign them to their rooms and add their fan, temperature and humidity entities to a dashboard. You're ready to catch a breeze.
+
+Already installed from `rubarksfield/connectair-hacs`? The old repository address redirects here. HACS can refresh the repository information to pick up the new name; your integration domain, entities and installed version do not change.
 
 S&P only registers its own callback address for the existing app client. This integration uses a PKCE-protected query callback relay instead of requesting your account password. A real authorization-code exchange, refresh-token issuance and subsequent refresh have been verified with S&P. Fragment callbacks are rejected by the provider, so use the complete query callback address described above. If S&P does not issue renewable credentials, setup fails with an authentication error. Do not share callback addresses or tokens in issues.
 
@@ -66,6 +83,8 @@ Contributions are welcome from people familiar with S&P NARAH, ESP32 networking,
 - **Unit unavailable:** confirm it is online in Connectair and that Home Assistant can reach the internet.
 - **Command unconfirmed:** check the fan in the S&P app. An acknowledgement without updated reported registers is not treated as success; retry after reading its current state.
 - **New model:** open an issue with the model and redacted integration diagnostics. Never attach raw HAR files, login URLs or credentials.
+
+Still stuck? [Report a bug](https://github.com/rubarksfield/home-assistant-connectair/issues/new?template=bug_report.yml) or [suggest an improvement](https://github.com/rubarksfield/home-assistant-connectair/issues/new?template=feature_request.yml). Share what happened, the model and software versions; keep account and household details private.
 
 ## Development
 

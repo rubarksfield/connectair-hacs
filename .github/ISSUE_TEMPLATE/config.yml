@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Installation and sign-in help
+    url: https://github.com/rubarksfield/home-assistant-connectair#troubleshooting
+    about: Check the quick start and common sign-in questions.
+  - name: Dashboards, sensors and schedules
+    url: https://github.com/rubarksfield/home-assistant-connectair/blob/main/docs/scheduling-and-sensors.md
+    about: Add fan controls and temperature or humidity charts to your home.

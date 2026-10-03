@@ -1,6 +1,6 @@
 # Publication privacy audit
 
-Reviewed 1 October 2026. This is a record of the inspection, not a guarantee that automated scanning detects every secret.
+Initial review: 1 October 2026. Latest repeat inspection: 4 October 2026. This is a record of the inspection, not a guarantee that automated scanning detects every secret.
 
 ## Published material inspected
 
@@ -35,3 +35,13 @@ Follow [AGENTS.md](../AGENTS.md), record fixes and findings in [CHANGELOG.md](..
 The humidity changes and executable-trace documentation were independently reviewed before publication. Pinned Gitleaks history and staged scans returned zero findings. A separate private comparison of 90 historical blobs and tracked working files against current credentials and known household identifiers also returned zero matches, without printing their values. No files under `private/` are tracked, and ignore checks covered the new decoder exports, local tools and capture evidence.
 
 Compiled authentication material encountered during native-app analysis remains owner-only private evidence; it is not included in source, fixtures, documentation or release material and is not used by this integration. New humidity requests reuse Home Assistant's existing verified HTTP session and private token provider, with no raw response or device-ID logging. Synthetic tests cover identity validation, unavailable readings and sanitized reauthentication. These checks supplement, rather than replace, the publication rules above.
+
+### 4 October 2026 repeat inspection
+
+Three independent checks covered the 43 current tracked files, all 46 published commits and four tags, and GitHub publication surfaces. The latter included four releases and all 94 Actions runs: 204 available log files containing 26,579 lines. No uploaded release assets, Actions artifacts, issues, pull requests, comments or deployments existed at inspection time.
+
+Pinned Gitleaks 8.30.1 returned zero findings for published history, current files, local history, staged changes and downloaded GitHub material. An isolated fabricated-token control confirmed staged and committed detection. A separate private-value comparison and manual identifier review found no actual credentials, callback codes, pairing keys, private keys or household account/device/network identifiers. Public vendor endpoints, hardware terms, factory addresses, synthetic test emails and package version strings were reviewed separately. No private captures or Home Assistant configuration are tracked anywhere in the published history.
+
+Thirty-one existing credential, traceback and diagnostics regression tests passed; 199 unrelated tests were deselected. No device commands were sent. Five early commits retain the original author/committer name and personal email, also repeated in six legacy Actions run metadata records. This known personal-data exception remains; a repository rename does not remove it. No history rewrite, tag replacement or Actions deletion was performed. Future commits continue to use the verified GitHub noreply identity.
+
+This inspection describes accessible publication surfaces at the audit time. It cannot guarantee removal of external clones, forks or caches, or detection of every secret format. Raw evidence and audit tooling remain in ignored owner-only local storage.

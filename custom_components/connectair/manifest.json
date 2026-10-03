@@ -3,10 +3,10 @@
   "name": "S&P Connectair",
   "codeowners": ["@rubarksfield"],
   "config_flow": true,
-  "documentation": "https://github.com/rubarksfield/connectair-hacs",
+  "documentation": "https://github.com/rubarksfield/home-assistant-connectair",
   "integration_type": "hub",
   "iot_class": "cloud_polling",
-  "issue_tracker": "https://github.com/rubarksfield/connectair-hacs/issues",
+  "issue_tracker": "https://github.com/rubarksfield/home-assistant-connectair/issues",
   "requirements": [],
   "version": "0.1.3"
 }

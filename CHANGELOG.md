@@ -8,6 +8,9 @@ User-facing changes, fixes and implementation findings are recorded here. Add ch
 
 ### Documentation and findings
 
+- Made the README more welcoming with a concise introduction, installation and compatibility table, release/check badges and direct setup buttons. Added privacy-aware bug and feature forms, plus automatic HACS and hassfest validation with read-only permissions and no PR comments.
+- Renamed the repository to `rubarksfield/home-assistant-connectair` and updated HACS installation, documentation, issue and release links. Integration domain and release version are unchanged.
+- Repeated the publication privacy audit against the current files, 46 commits, four releases and 94 workflow runs. No credentials or household identifiers were found. Five early commits and six Actions metadata records still contain the original author name/email; published history was not rewritten. Thirty-one privacy regression tests passed.
 - Recorded the final Be Home dashboard adjustments after live review: removed the reported speed/mode/connection row, the redundant ventilation summary and the unsupported Turn off card from both fan panels. Temperature and humidity figures plus the four speed controls remain; the current percentage selects and highlights its matching button. The updated configuration was read back from Home Assistant, but the browser session was signed out so the rendered appearance could not be rechecked. No fan commands were sent during these layout changes.
 - Added a public invitation for contributors to help establish stock-board LAN control. The documented investigations have not produced a verified local speed command, status read or offline path; the integration remains cloud-dependent. No runtime capability or version changed. See the [contribution scope](README.md#help-wanted-local-control) and [LAN findings](docs/lan-control.md).
 - Recorded the live 0.1.3 installation and dashboard update: both supported units expose cloud-reported °C sensors, Be Home includes temperature, reported speed/mode/connectivity and four manual speed actions per unit, and Ventilation includes 24-hour temperature graphs alongside its existing speed and humidity graphs. Dashboard configuration and current sensor states were read back. Screenshot rendering was disabled, fan button actions were not sent as a test, and Stop remains unavailable on these units.
@@ -130,8 +133,8 @@ User-facing changes, fixes and implementation findings are recorded here. Add ch
 - Boost, automatic-mode selection, unsupported models and local/offline control are not implemented.
 - Release validation: 153 tests passed against genuine Home Assistant 2026.9.2; Ruff lint/format and release CI passed. Live enrollment, Home Assistant control and restart persistence were verified separately.
 
-[Unreleased]: https://github.com/rubarksfield/connectair-hacs/compare/v0.1.3...main
-[0.1.3]: https://github.com/rubarksfield/connectair-hacs/compare/v0.1.2...v0.1.3
-[0.1.2]: https://github.com/rubarksfield/connectair-hacs/releases/tag/v0.1.2
-[0.1.1]: https://github.com/rubarksfield/connectair-hacs/releases/tag/v0.1.1
-[0.1.0]: https://github.com/rubarksfield/connectair-hacs/releases/tag/v0.1.0
+[Unreleased]: https://github.com/rubarksfield/home-assistant-connectair/compare/v0.1.3...main
+[0.1.3]: https://github.com/rubarksfield/home-assistant-connectair/compare/v0.1.2...v0.1.3
+[0.1.2]: https://github.com/rubarksfield/home-assistant-connectair/releases/tag/v0.1.2
+[0.1.1]: https://github.com/rubarksfield/home-assistant-connectair/releases/tag/v0.1.1
+[0.1.0]: https://github.com/rubarksfield/home-assistant-connectair/releases/tag/v0.1.0
